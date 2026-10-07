@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Googles officiella TEST-id:n. De visar alltid testannonser och ger inga pengar,
+    men de är ofarliga att klicka på under utvecklingen.
+
+    Dina riktiga id:n lägger du i app/src/release/res/values/ads.xml
+    (kopiera mallen ads.release.example.xml i projektroten). Då använder
+    debug-bygget testannonser och release-bygget riktiga annonser automatiskt.
+-->
+<resources>
+    <string name="admob_app_id" translatable="false">ca-app-pub-3940256099942544~3347511713</string>
+    <string name="ad_unit_banner" translatable="false">ca-app-pub-3940256099942544/9214589741</string>
+    <string name="ad_unit_interstitial" translatable="false">ca-app-pub-3940256099942544/1033173712</string>
+    <string name="ad_unit_rewarded" translatable="false">ca-app-pub-3940256099942544/5224354917</string>
+</resources>

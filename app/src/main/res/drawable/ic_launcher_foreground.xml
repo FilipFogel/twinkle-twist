@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ett eluttag, en sladd och en tänd lampa. Allt ryms i ikonens säkra zon (de mittersta 66 enheterna). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:pivotX="54"
+        android:pivotY="54"
+        android:scaleX="0.74"
+        android:scaleY="0.74"
+        android:translateX="-1.5"
+        android:translateY="2">
+    <!-- lampans sken -->
+    <path android:fillColor="#FFD84A" android:fillAlpha="0.35" android:pathData="M43,41a22,22 0,1 0,44 0a22,22 0,1 0,-44 0" />
+    <!-- sladden -->
+    <path
+        android:pathData="M40,72H65V50"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:strokeWidth="8" />
+    <!-- eluttaget -->
+    <path android:fillColor="#FFFFFF" android:pathData="M29,61h12a5,5 0,0 1,5 5v12a5,5 0,0 1,-5 5h-12a5,5 0,0 1,-5 -5v-12a5,5 0,0 1,5 -5z" />
+    <path android:fillColor="#FF8A1F" android:pathData="M36.2,63.5L30.5,72.6H34.4L33.6,80.5L39.5,71H35.6Z" />
+    <!-- lampan -->
+    <path android:fillColor="#FFD23F" android:pathData="M51,41a14,14 0,1 0,28 0a14,14 0,1 0,-28 0" />
+    <path android:fillColor="#FFFFFF" android:fillAlpha="0.7" android:pathData="M56,35a4.5,3.2 0,1 0,9 0a4.5,3.2 0,1 0,-9 0" />
+    </group>
+</vector>

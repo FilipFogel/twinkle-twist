@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    MALL. Kopiera till app/src/release/res/values/ads.xml och fyll i id:n från AdMob.
+    App-id har ett ~ i sig, annonsenheternas id har ett /.
+-->
+<resources>
+    <string name="admob_app_id" translatable="false">ca-app-pub-XXXXXXXXXXXXXXXX~YYYYYYYYYY</string>
+    <string name="ad_unit_banner" translatable="false">ca-app-pub-XXXXXXXXXXXXXXXX/1111111111</string>
+    <string name="ad_unit_interstitial" translatable="false">ca-app-pub-XXXXXXXXXXXXXXXX/2222222222</string>
+    <string name="ad_unit_rewarded" translatable="false">ca-app-pub-XXXXXXXXXXXXXXXX/3333333333</string>
+</resources>
