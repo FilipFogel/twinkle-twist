@@ -1,4 +1,4 @@
-package app.ljusslinga.game
+package app.twinkletwist.game
 
 import android.app.Activity
 import android.os.Build
@@ -7,8 +7,8 @@ import android.webkit.JavascriptInterface
 import android.webkit.WebView
 
 /**
- * Bryggan mellan spelet (JavaScript) och appen. Syns i spelet som window.AndroidBridge.
- * Metoderna anropas på en bakgrundstråd, så allt som rör skärmen skickas vidare till UI-tråden.
+ * The bridge between the game (JavaScript) and the app. Visible in the game as window.AndroidBridge.
+ * The methods are called on a background thread, so anything touching the screen is posted to the UI thread.
  */
 class GameBridge(
     private val activity: Activity,
@@ -16,7 +16,7 @@ class GameBridge(
     private val ads: AdsManager
 ) {
 
-    /** Visar en belönad annons. Svarar false direkt om ingen annons är laddad. */
+    /** Shows a rewarded ad. Returns false right away if no ad is loaded. */
     @JavascriptInterface
     fun showRewarded(kind: String): Boolean {
         if (!ads.isRewardedReady) return false
@@ -24,7 +24,7 @@ class GameBridge(
         return true
     }
 
-    /** Visar en helskärmsannons mellan nivåer. Svarar false om det inte är läge för en. */
+    /** Shows an interstitial between levels. Returns false if now is not a good time for one. */
     @JavascriptInterface
     fun showInterstitial(): Boolean {
         if (!ads.canShowInterstitial()) return false
@@ -32,7 +32,7 @@ class GameBridge(
         return true
     }
 
-    /** True om spelaren måste kunna ändra sitt annonssamtycke (EU/EES m.fl.). */
+    /** True if the player must be able to change their ad consent (EU/EEA and others). */
     @JavascriptInterface
     fun privacyOptionsRequired(): Boolean = ads.privacyOptionsRequired
 
@@ -41,7 +41,7 @@ class GameBridge(
         activity.runOnUiThread { ads.showPrivacyOptions() }
     }
 
-    /** Kort vibration: "tap", "ok" eller "bad". Kräver ingen behörighet. */
+    /** Short vibration: "tap", "ok" or "bad". Needs no permission. */
     @JavascriptInterface
     fun haptic(kind: String) {
         val constant = when (kind) {

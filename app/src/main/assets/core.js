@@ -1,16 +1,16 @@
-/* Ljusslinga – spelkärna: skapar nivåer och räknar ut vad som lyser.
-   Ren JavaScript utan beroenden. Körs både i appens WebView och i Node (för tester).
+/* Twinkle Twist – game core: generates levels and works out what is lit.
+   Plain JavaScript with no dependencies. Runs both in the app's WebView and in Node (for tests).
 
-   En bit beskrivs av en bitmask över fyra håll: 1 = upp, 2 = höger, 4 = ner, 8 = vänster.
-   Lösningen är ett träd som når alla rutor från eluttaget. Spelaren vrider bitarna ett
-   kvarts varv medurs i taget tills allt hänger ihop. */
+   A piece is described by a bitmask over four directions: 1 = up, 2 = right, 4 = down, 8 = left.
+   The solution is a tree that reaches every square from the power socket. The player turns the
+   pieces a quarter turn clockwise at a time until everything connects. */
 (function (root) {
   'use strict';
 
   var DX = [0, 1, 0, -1];
   var DY = [-1, 0, 1, 0];
 
-  /** Deterministisk slumpgenerator (mulberry32) så att nivå N alltid blir samma pussel. */
+  /** Deterministic random generator (mulberry32) so that level N is always the same puzzle. */
   function makeRng(seed) {
     var a = seed >>> 0;
     return function () {
@@ -21,13 +21,13 @@
     };
   }
 
-  /** Vrider en bit k kvarts varv medurs. */
+  /** Turns a piece k quarter turns clockwise. */
   function rot(mask, k) {
     k &= 3;
     return ((mask << k) | (mask >> (4 - k))) & 15;
   }
 
-  /** Efter hur många kvarts varv biten ser likadan ut igen. */
+  /** After how many quarter turns the piece looks the same again. */
   function period(mask) {
     if (mask === 15 || mask === 0) return 1;
     return (mask === 5 || mask === 10) ? 2 : 4;
@@ -37,7 +37,7 @@
     return (mask & 1) + (mask >> 1 & 1) + (mask >> 2 & 1) + (mask >> 3 & 1);
   }
 
-  /** Grannrutan åt håll d, eller -1 om där är kant eller hål. */
+  /** The neighboring square in direction d, or -1 if there is an edge or a hole. */
   function neighbor(p, i, d) {
     var x = i % p.w + DX[d], y = Math.floor(i / p.w) + DY[d];
     if (p.wrap) { x = (x + p.w) % p.w; y = (y + p.h) % p.h; }
@@ -46,7 +46,7 @@
     return p.hole[j] ? -1 : j;
   }
 
-  /** Vilka rutor har kontakt med eluttaget just nu? r = antal vridningar per ruta. */
+  /** Which squares are connected to the power socket right now? r = number of turns per square. */
   function lit(p, r) {
     var on = new Uint8Array(p.n), stack = [p.src], count = 1;
     on[p.src] = 1;
@@ -62,18 +62,18 @@
     return { on: on, count: count, done: count === p.cells };
   }
 
-  /** Rutorna som vrids när man trycker på ruta i (tvillingar vrids tillsammans). */
+  /** The squares that turn when square i is tapped (twins turn together). */
   function groupOf(p, i) {
     return p.link[i] >= 0 ? p.groups[p.link[i]] : [i];
   }
 
-  /** Antal tryck som återstår innan biten sitter som i lösningen. */
+  /** Number of taps left before the piece sits as in the solution. */
   function tapsFor(mask, r) {
     var per = period(mask);
     return (per - r % per) % per;
   }
 
-  /** Minsta antal tryck som löser pusslet från läget r, enligt den skapade lösningen. */
+  /** Fewest taps that solve the puzzle from state r, according to the generated solution. */
   function minTaps(p, r) {
     var total = 0, i;
     for (i = 0; i < p.n; i++) if (!p.hole[i] && p.link[i] < 0) total += tapsFor(p.mask[i], r[i]);
@@ -81,7 +81,7 @@
     return total;
   }
 
-  /** Nästa bit en ledtråd ska rätta till: den felvända bit som ligger närmast eluttaget. */
+  /** The next piece a hint should fix: the wrongly turned piece closest to the power socket. */
   function hintTarget(p, r, fixed) {
     var seen = new Uint8Array(p.n), queue = [p.src];
     seen[p.src] = 1;
@@ -97,7 +97,7 @@
     return -1;
   }
 
-  /** Kort fingeravtryck av pusslet, så att en sparning aldrig läggs på fel pussel. */
+  /** Short fingerprint of the puzzle, so a save is never applied to the wrong puzzle. */
   function signature(p) {
     var h = 7, s = p.w + 'x' + p.h + ':' + p.mask.join(',') + ':' + p.start.join('');
     for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
@@ -113,7 +113,7 @@
     if (h >= 5) sy += Math.floor(rnd() * 3) - 1;
     p.src = sy * w + sx;
 
-    // Hål i brädet: utspridda, aldrig intill varandra eller intill eluttaget.
+    // Holes in the board: spread out, never next to each other or next to the power socket.
     var wantHoles = p.wrap ? 0 : (spec.holes || 0);
     for (var tries = 0; tries < 80 && wantHoles > 0; tries++) {
       var c = Math.floor(rnd() * N), cx = c % w, cy = Math.floor(c / w), clash = false;
@@ -125,9 +125,9 @@
       p.hole[c] = 1; wantHoles--;
     }
 
-    // Väx ett träd från eluttaget. Högst tre sladdar per bit, så att kryss nästan aldrig uppstår.
+    // Grow a tree from the power socket. At most three cables per piece, so crosses almost never appear.
     var seen = new Uint8Array(N), deg = new Uint8Array(N), frontier = [];
-    var dfs = 0.25 + rnd() * 0.5; // högt = långa slingor, lågt = många förgreningar
+    var dfs = 0.25 + rnd() * 0.5; // high = long runs, low = many branches
     function connect(a, dir, b) {
       p.mask[a] |= 1 << dir; p.mask[b] |= 1 << ((dir + 2) & 3);
       deg[a]++; deg[b]++; seen[b] = 1;
@@ -142,7 +142,7 @@
       if (seen[e[2]] || deg[e[0]] >= 3) continue;
       connect(e[0], e[1], e[2]);
     }
-    // Rutor som blev över kopplas in ändå. Är de helt avskurna blir de hål.
+    // Leftover squares get connected anyway. If they are completely cut off they become holes.
     var changed = true;
     while (changed) {
       changed = false;
@@ -162,7 +162,7 @@
     }
     if (p.cells < N * 0.75 || p.lamps < 2) return null;
 
-    // Fastskruvade bitar (sitter redan rätt) och tvillingar (vrids tillsammans).
+    // Screwed-down pieces (already correct) and twins (turn together).
     var pool = [];
     for (i = 0; i < N; i++) if (!p.hole[i] && period(p.mask[i]) > 1) pool.push(i);
     for (i = pool.length - 1; i > 0; i--) { j = Math.floor(rnd() * (i + 1)); var t = pool[i]; pool[i] = pool[j]; pool[j] = t; }
@@ -171,7 +171,7 @@
     var turners = [];
     for (; at < pool.length; at++) {
       var c2 = pool[at];
-      // tvillingar väljs bland hörn och T-bitar: de har fyra lägen och ingen lampa i mitten
+      // twins are picked among corners and T-pieces: they have four states and no lamp in the middle
       if (c2 !== p.src && period(p.mask[c2]) === 4 && deg[c2] >= 2) turners.push(c2);
     }
     for (g = 0; g < (spec.links || 0) && turners.length >= 2; g++) {
@@ -179,7 +179,7 @@
       p.link[a1] = g; p.link[b1] = g; p.groups.push([a1, b1]);
     }
 
-    // Blanda: vrid bitarna slumpvis. Fastskruvade bitar rörs inte.
+    // Scramble: turn the pieces randomly. Screwed-down pieces are left alone.
     var scramble = spec.scramble || 0.88;
     p.start = new Array(N).fill(0);
     for (i = 0; i < N; i++) {
@@ -196,7 +196,7 @@
     return p;
   }
 
-  /** Skapar ett pussel. Samma (seed, spec) ger alltid samma pussel. */
+  /** Creates a puzzle. The same (seed, spec) always gives the same puzzle. */
   function generate(seed, spec) {
     var attempt, p;
     for (attempt = 0; attempt < 40; attempt++) {
@@ -211,10 +211,10 @@
     return null;
   }
 
-  /** Nivåkurva: brädet växer, sedan kommer skruvar, hål, tvillingar och till sist sammanlänkade kanter. */
+  /** Level curve: the board grows, then come screws, holes, twins and finally wrapping edges. */
   function levelSpec(level) {
     var s;
-    // gentle = varje felvänd bit är bara ett tryck från rätt läge
+    // gentle = every wrongly turned piece is just one tap from the right state
     if (level === 1) s = { w: 3, h: 3, scramble: 0.4, gentle: true };
     else if (level === 2) s = { w: 3, h: 3, scramble: 0.7, gentle: true };
     else if (level <= 4) s = { w: 3, h: 4, scramble: 0.7 };
@@ -237,7 +237,7 @@
     return generate(5000 + level, levelSpec(level));
   }
 
-  /** Dagens slinga: samma för alla spelare samma dag. dateKey = "ÅÅÅÅ-MM-DD". */
+  /** Daily puzzle: the same for every player on the same day. dateKey = "YYYY-MM-DD". */
   function dailyPuzzle(dateKey) {
     var num = parseInt(dateKey.replace(/-/g, ''), 10);
     var dow = new Date(dateKey + 'T12:00:00').getDay();
@@ -251,5 +251,5 @@
               signature: signature, generate: generate, levelSpec: levelSpec, levelPuzzle: levelPuzzle,
               dailyPuzzle: dailyPuzzle };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
-  root.LSCore = api;
+  root.TTCore = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

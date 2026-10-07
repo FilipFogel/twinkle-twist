@@ -1,4 +1,4 @@
-package app.ljusslinga.game.test;
+package app.twinkletwist.game.test;
 
 import android.app.Activity;
 import android.graphics.Insets;
@@ -21,8 +21,8 @@ import java.io.InputStream;
 import java.util.HashMap;
 
 /**
- * Testskal utan annons-SDK: visar spelet (assets) i en WebView. Eftersom ingen
- * AndroidBridge finns visar spelet sina platshållare där annonserna annars ligger.
+ * Test shell without the ads SDK: shows the game (assets) in a WebView. Since there is no
+ * AndroidBridge, the game shows its placeholders where the ads would otherwise be.
  */
 public class MainActivity extends Activity {
 
@@ -44,7 +44,7 @@ public class MainActivity extends Activity {
         root.addView(webView, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
         setContentView(root);
 
-        // Håll innehållet undan från statusfält, navigeringsfält och kamerahål.
+        // Keep the content clear of the status bar, navigation bar and camera cutout.
         root.setOnApplyWindowInsetsListener(new View.OnApplyWindowInsetsListener() {
             @Override
             @SuppressWarnings("deprecation")
@@ -64,7 +64,7 @@ public class MainActivity extends Activity {
         webView.setVerticalScrollBarEnabled(false);
         webView.setHorizontalScrollBarEnabled(false);
         webView.setOverScrollMode(View.OVER_SCROLL_NEVER);
-        webView.setLongClickable(false); // spelet har ett eget "håll inne" för att nåla fast bitar
+        webView.setLongClickable(false); // the game has its own "press and hold" to pin pieces
         webView.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View v) {
@@ -73,13 +73,13 @@ public class MainActivity extends Activity {
         });
         WebSettings s = webView.getSettings();
         s.setJavaScriptEnabled(true);
-        s.setDomStorageEnabled(true); // spelets sparning (localStorage)
+        s.setDomStorageEnabled(true); // the game's save data (localStorage)
         s.setMediaPlaybackRequiresUserGesture(false);
         s.setAllowFileAccess(false);
         s.setAllowContentAccess(false);
         s.setTextZoom(100);
 
-        // Spelets filer serveras lokalt från assets under en https-adress. Inget hämtas från nätet.
+        // The game's files are served locally from assets under an https address. Nothing is fetched from the network.
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
@@ -115,11 +115,11 @@ public class MainActivity extends Activity {
         return "application/octet-stream";
     }
 
-    // Bakåt: låt spelet stänga dialoger eller gå till menyn först. Stäng appen först från menyn.
+    // Back: let the game close dialogs or go to the menu first. Only close the app from the menu.
     @Override
     @SuppressWarnings("deprecation")
     public void onBackPressed() {
-        webView.evaluateJavascript("(window.LS && window.LS.onBack()) ? 'handled' : 'exit'", new ValueCallback<String>() {
+        webView.evaluateJavascript("(window.TT && window.TT.onBack()) ? 'handled' : 'exit'", new ValueCallback<String>() {
             @Override
             public void onReceiveValue(String value) {
                 if (value == null || !value.contains("handled")) finish();

@@ -1,4 +1,4 @@
-package app.ljusslinga.game
+package app.twinkletwist.game
 
 import android.app.Activity
 import android.os.Handler
@@ -23,14 +23,14 @@ import com.google.android.ump.UserMessagingPlatform
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * All AdMob-kod på ett ställe.
+ * All AdMob code in one place.
  *
- *  - Samtycke (GDPR) hämtas med Googles UMP innan några annonser laddas.
- *  - Banderoll: ligger i en egen yta under spelet.
- *  - Helskärmsannons: visas mellan nivåer när spelet ber om det.
- *  - Belönad annons: ger nya ledtrådar.
+ *  - Consent (GDPR) is gathered with Google's UMP before any ads are loaded.
+ *  - Banner: sits in its own area below the game.
+ *  - Interstitial: shown between levels when the game asks for it.
+ *  - Rewarded ad: grants new hints.
  *
- * Spelet får besked tillbaka genom [runJs], som kör JavaScript i WebView:n.
+ * The game gets results back through [runJs], which runs JavaScript in the WebView.
  */
 class AdsManager(
     private val activity: Activity,
@@ -61,7 +61,7 @@ class AdsManager(
     var privacyOptionsRequired = false
         private set
 
-    /** Startar samtyckesflödet och därefter annonserna. Anropas en gång från MainActivity. */
+    /** Starts the consent flow and then the ads. Called once from MainActivity. */
     fun start() {
         val params = ConsentRequestParameters.Builder().build()
         consent.requestConsentInfoUpdate(
@@ -69,14 +69,14 @@ class AdsManager(
             params,
             {
                 UserMessagingPlatform.loadAndShowConsentFormIfRequired(activity) { formError ->
-                    if (formError != null) Log.w(TAG, "Samtyckesformulär: ${formError.message}")
+                    if (formError != null) Log.w(TAG, "Consent form: ${formError.message}")
                     refreshPrivacyFlag()
                     if (consent.canRequestAds()) initializeAds()
                 }
             },
-            { error -> Log.w(TAG, "Samtyckesinfo kunde inte hämtas: ${error.message}") }
+            { error -> Log.w(TAG, "Could not fetch consent info: ${error.message}") }
         )
-        // Har spelaren redan svarat en tidigare gång kan annonserna börja laddas direkt.
+        // If the player already answered on an earlier launch, ads can start loading right away.
         refreshPrivacyFlag()
         if (consent.canRequestAds()) initializeAds()
     }
@@ -88,14 +88,14 @@ class AdsManager(
 
     fun showPrivacyOptions() {
         UserMessagingPlatform.showPrivacyOptionsForm(activity) { formError ->
-            if (formError != null) Log.w(TAG, "Integritetsval: ${formError.message}")
+            if (formError != null) Log.w(TAG, "Privacy options: ${formError.message}")
             refreshPrivacyFlag()
         }
     }
 
     private fun initializeAds() {
         if (initialized.getAndSet(true)) return
-        // Initiering på en bakgrundstråd, enligt Googles rekommendation, så att starten inte hackar.
+        // Initialize on a background thread, as Google recommends, so startup does not stutter.
         Thread {
             MobileAds.initialize(activity) {}
             activity.runOnUiThread {
@@ -107,14 +107,14 @@ class AdsManager(
         }.start()
     }
 
-    // ---------- Banderoll ----------
+    // ---------- Banner ----------
 
     private fun loadBanner() {
         val size = bannerSize()
         val view = AdView(activity)
         view.adUnitId = activity.getString(R.string.ad_unit_banner)
         view.setAdSize(size)
-        bannerContainer.minimumHeight = size.getHeightInPixels(activity) // reservera plats så att brädet inte hoppar
+        bannerContainer.minimumHeight = size.getHeightInPixels(activity) // reserve space so the board does not jump
         bannerContainer.removeAllViews()
         bannerContainer.addView(view)
         view.loadAd(AdRequest.Builder().build())
@@ -129,7 +129,7 @@ class AdsManager(
         return AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(activity, widthDp)
     }
 
-    // ---------- Helskärmsannons ----------
+    // ---------- Interstitial ----------
 
     fun canShowInterstitial(): Boolean =
         isInterstitialReady && SystemClock.elapsedRealtime() - lastFullScreenAdAt > MIN_GAP_MS
@@ -150,7 +150,7 @@ class AdsManager(
 
                 override fun onAdFailedToLoad(error: LoadAdError) {
                     loadingInterstitial = false
-                    Log.d(TAG, "Helskärmsannons laddades inte: ${error.message}")
+                    Log.d(TAG, "Interstitial failed to load: ${error.message}")
                     handler.postDelayed({ loadInterstitial() }, RETRY_MS)
                 }
             }
@@ -160,7 +160,7 @@ class AdsManager(
     fun showInterstitial() {
         val ad = interstitial
         if (ad == null) {
-            runJs("window.LS && window.LS.onInterstitialClosed()")
+            runJs("window.TT && window.TT.onInterstitialClosed()")
             return
         }
         interstitial = null
@@ -168,19 +168,19 @@ class AdsManager(
         ad.fullScreenContentCallback = object : FullScreenContentCallback() {
             override fun onAdDismissedFullScreenContent() {
                 lastFullScreenAdAt = SystemClock.elapsedRealtime()
-                runJs("window.LS && window.LS.onInterstitialClosed()")
+                runJs("window.TT && window.TT.onInterstitialClosed()")
                 loadInterstitial()
             }
 
             override fun onAdFailedToShowFullScreenContent(error: AdError) {
-                runJs("window.LS && window.LS.onInterstitialClosed()")
+                runJs("window.TT && window.TT.onInterstitialClosed()")
                 loadInterstitial()
             }
         }
         ad.show(activity)
     }
 
-    // ---------- Belönad annons ----------
+    // ---------- Rewarded ad ----------
 
     private fun loadRewarded() {
         if (destroyed || loadingRewarded || rewarded != null) return
@@ -198,19 +198,19 @@ class AdsManager(
 
                 override fun onAdFailedToLoad(error: LoadAdError) {
                     loadingRewarded = false
-                    Log.d(TAG, "Belönad annons laddades inte: ${error.message}")
+                    Log.d(TAG, "Rewarded ad failed to load: ${error.message}")
                     handler.postDelayed({ loadRewarded() }, RETRY_MS)
                 }
             }
         )
     }
 
-    /** [kind] är spelets namn på belöningen ("hints") och skickas tillbaka oförändrat. */
+    /** [kind] is the game's name for the reward ("hints") and is passed back unchanged. */
     fun showRewarded(kind: String) {
         val safeKind = kind.filter { it.isLetterOrDigit() }
         val ad = rewarded
         if (ad == null) {
-            runJs("window.LS && window.LS.onReward('$safeKind', false)")
+            runJs("window.TT && window.TT.onReward('$safeKind', false)")
             return
         }
         rewarded = null
@@ -219,22 +219,22 @@ class AdsManager(
         ad.fullScreenContentCallback = object : FullScreenContentCallback() {
             override fun onAdDismissedFullScreenContent() {
                 lastFullScreenAdAt = SystemClock.elapsedRealtime()
-                // Liten marginal ifall belöningsbeskedet kommer strax efter att annonsen stängts.
+                // Small margin in case the reward callback arrives just after the ad is closed.
                 handler.postDelayed({
-                    if (!destroyed) runJs("window.LS && window.LS.onReward('$safeKind', $earned)")
+                    if (!destroyed) runJs("window.TT && window.TT.onReward('$safeKind', $earned)")
                 }, 250)
                 loadRewarded()
             }
 
             override fun onAdFailedToShowFullScreenContent(error: AdError) {
-                runJs("window.LS && window.LS.onReward('$safeKind', false)")
+                runJs("window.TT && window.TT.onReward('$safeKind', false)")
                 loadRewarded()
             }
         }
         ad.show(activity) { earned = true }
     }
 
-    // ---------- Livscykel ----------
+    // ---------- Lifecycle ----------
 
     fun onResume() {
         banner?.resume()
@@ -254,8 +254,8 @@ class AdsManager(
     }
 
     private companion object {
-        const val TAG = "LjusslingaAds"
-        const val RETRY_MS = 45_000L   // vänta innan ett nytt laddningsförsök
-        const val MIN_GAP_MS = 60_000L // minst så här långt mellan två helskärmsannonser
+        const val TAG = "TwinkleTwistAds"
+        const val RETRY_MS = 45_000L   // wait before another load attempt
+        const val MIN_GAP_MS = 60_000L // at least this long between two full-screen ads
     }
 }

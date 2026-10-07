@@ -6,13 +6,13 @@ plugins {
 }
 
 android {
-    // Byt till ett eget, unikt paketnamn innan du publicerar (t.ex. se.dittnamn.ljusslinga).
-    // Det går inte att ändra efter första uppladdningen till Google Play.
-    namespace = "app.ljusslinga.game"
+    // Change to your own unique package name before publishing (e.g. com.yourname.twinkletwist).
+    // It cannot be changed after the first upload to Google Play.
+    namespace = "app.twinkletwist.game"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "app.ljusslinga.game"
+        applicationId = "app.twinkletwist.game"
         minSdk = 26
         targetSdk = 36
         versionCode = 1

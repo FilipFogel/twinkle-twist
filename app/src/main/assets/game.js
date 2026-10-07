@@ -1,112 +1,68 @@
-/* Ljusslinga – gränssnitt: skärmar, tryck, ledtrådar, stjärnor, sparning och annonser.
-   Annonser visas av Android-skalet via window.AndroidBridge. Utan brygga (t.ex. i en
-   vanlig webbläsare) visas en enkel platshållare så att flödet går att prova. */
+/* Twinkle Twist – UI: screens, taps, hints, stars, saving and ads.
+   Ads are shown by the Android shell via window.AndroidBridge. Without a bridge (e.g. in a
+   regular browser) a simple placeholder is shown so the flow can be tried out. */
 (function () {
   'use strict';
 
-  var C = window.LSCore;
+  var C = window.TTCore;
   var bridge = window.AndroidBridge || null;
-  var SAVE_KEY = 'ljusslinga.v1';
+  var SAVE_KEY = 'twinkletwist.v1';
 
-  // ---------- Inställningar som är lätta att skruva på ----------
-  var START_HINTS = 3;          // ledtrådar från start
-  var HINTS_PER_AD = 2;         // ledtrådar per belönad annons
-  var LEVELS_BETWEEN_ADS = 3;   // helskärmsannons var N:e avklarade nivå …
-  var FIRST_AD_LEVEL = 6;       // … men aldrig före den här nivån
-  var LONG_PRESS_MS = 420;      // så länge håller man inne för att nåla fast en bit
+  // ---------- Settings that are easy to tweak ----------
+  var START_HINTS = 3;          // hints at the start
+  var HINTS_PER_AD = 2;         // hints per rewarded ad
+  var LEVELS_BETWEEN_ADS = 3;   // interstitial every Nth completed level …
+  var FIRST_AD_LEVEL = 6;       // … but never before this level
+  var LONG_PRESS_MS = 420;      // how long to press and hold to pin a piece
   var LAMP = ['#FF5D5D', '#FFB81F', '#22C58B', '#3B9BFF', '#9B6BFF', '#FF6FB5'];
-  var LETTER = ['#E5484D', '#F08400', '#12A679', '#2F7BFF', '#8B5CF6', '#E64C9C']; // ordbildens bokstäver, mörkare för läsbarhet
+  var LETTER = ['#E5484D', '#F08400', '#12A679', '#2F7BFF', '#8B5CF6', '#E64C9C']; // wordmark letters, darker for legibility
 
-  // ---------- Texter ----------
+  // ---------- Text ----------
   var STR = {
-    sv: {
-      tagline: 'Vrid bitarna tills hela slingan lyser.',
-      play: 'Spela nivå {n}', daily: 'Dagens slinga', dailyNew: 'En ny slinga varje dag',
-      dailyStreak: '{n} dagar i rad', dailyDone: 'Klar i dag', howto: 'Så spelar du',
-      settings: 'Inställningar', stars: '{n} stjärnor', level: 'Nivå {n}', wrapTag: 'runt kanten',
-      atMost: 'högst {n}', taps: 'Antal drag', lampsLit: '{a} av {b} lampor lyser',
-      tip1: 'Tryck på en bit så vrids den ett kvarts varv.',
-      tip2: 'Strömmen kommer från den gula rutan. Alla lampor ska lysa.',
-      tip3: 'Håll inne på en bit för att nåla fast den när du vet att den sitter rätt.',
-      introLocked: 'Bitar med skruvar sitter fast. De är redan rätt vända.',
-      introHoles: 'Här saknas några rutor. Dra slingan runt hålen.',
-      introLinks: 'Bitar med samma symbol sitter ihop. Vrider du den ena vrids den andra.',
-      introWrap: 'Kanterna hänger ihop. En sladd som går ut till höger kommer in från vänster.',
-      fixedMsg: 'Den biten sitter fast.', pinnedMsg: 'Du har nålat fast den biten. Håll inne för att lossa den.',
-      pinOn: 'Biten är fastnålad.', pinOff: 'Biten är loss igen.',
-      hintDone: 'Den markerade biten sitter rätt nu och är låst.',
-      winLevel: 'Nivå {n} klar', winDaily: 'Dagens slinga lyser',
-      winTaps: 'Du använde {a} drag.', winBest: 'Det gav tre stjärnor.', winNeed: 'Tre stjärnor kräver högst {n}.',
-      dailyReward: 'Du fick 1 ledtråd.', dailyAgain: 'En ny slinga väntar i morgon.',
-      next: 'Nästa nivå', retry: 'Försök igen', home: 'Till menyn',
-      restartTitle: 'Börja om nivån?', restartText: 'Bitarna vrids tillbaka och dragen nollställs.',
-      restart: 'Börja om', keepPlaying: 'Fortsätt spela',
-      noHintsTitle: 'Slut på ledtrådar', noHintsText: 'Titta på en kort annons så får du {n} nya.',
-      watchAd: 'Titta på annons', notNow: 'Inte nu', gotHints: 'Du fick {n} ledtrådar',
-      adUnavailable: 'Ingen annons finns just nu. Försök igen om en stund.',
-      setSound: 'Ljud', setHaptics: 'Vibration', setLang: 'Språk', langName: 'Svenska',
-      setPrivacy: 'Annonsval och integritet', setReset: 'Nollställ framsteg',
-      setResetSure: 'Tryck igen för att nollställa allt', resetDone: 'Framstegen är nollställda',
-      close: 'Stäng', letsGo: 'Då kör vi',
-      how1: 'Tryck på en bit så vrids den ett kvarts varv.', how1b: 'Här är slingan bruten.',
-      how2: 'Koppla ihop sladdarna så att strömmen når varje lampa.', how2b: 'När alla lyser är nivån klar.',
-      how3: 'Färre drag ger fler stjärnor.', how3b: 'Håll inne på en bit för att nåla fast den.',
-      adSim: 'Här visas en annons i appen', adSimNote: 'Förhandsvisning utan riktiga annonser.',
-      adSimWait: 'Vänta {n} …', back: 'Tillbaka', hint: 'Ledtråd',
-      ariaLamp: 'Lampa', ariaSrc: 'Eluttag', ariaCable: 'Sladd', ariaOn: 'har ström', ariaOff: 'saknar ström',
-      ariaFixed: 'sitter fast'
-    },
-    en: {
-      tagline: 'Turn the pieces until the whole string lights up.',
-      play: 'Play level {n}', daily: 'Daily string', dailyNew: 'A new string every day',
-      dailyStreak: '{n} days in a row', dailyDone: 'Done for today', howto: 'How to play',
-      settings: 'Settings', stars: '{n} stars', level: 'Level {n}', wrapTag: 'wraps around',
-      atMost: 'at most {n}', taps: 'Moves', lampsLit: '{a} of {b} lamps lit',
-      tip1: 'Tap a piece to turn it a quarter turn.',
-      tip2: 'Power comes from the yellow square. Every lamp should light up.',
-      tip3: 'Press and hold a piece to pin it once you know it is right.',
-      introLocked: 'Pieces with screws are fixed. They already face the right way.',
-      introHoles: 'Some squares are missing here. Lead the string around the gaps.',
-      introLinks: 'Pieces with the same symbol are linked. Turn one and the other turns too.',
-      introWrap: 'The edges are joined. A cable leaving on the right comes back in on the left.',
-      fixedMsg: 'That piece is fixed.', pinnedMsg: 'You pinned that piece. Press and hold to release it.',
-      pinOn: 'The piece is pinned.', pinOff: 'The piece is free again.',
-      hintDone: 'The highlighted piece is right now and locked.',
-      winLevel: 'Level {n} done', winDaily: 'The daily string is lit',
-      winTaps: 'You used {a} moves.', winBest: 'That earned three stars.', winNeed: 'Three stars need at most {n}.',
-      dailyReward: 'You earned 1 hint.', dailyAgain: 'A new string is waiting tomorrow.',
-      next: 'Next level', retry: 'Try again', home: 'Back to menu',
-      restartTitle: 'Start the level over?', restartText: 'The pieces turn back and your moves reset.',
-      restart: 'Start over', keepPlaying: 'Keep playing',
-      noHintsTitle: 'Out of hints', noHintsText: 'Watch a short ad to get {n} more.',
-      watchAd: 'Watch ad', notNow: 'Not now', gotHints: 'You got {n} hints',
-      adUnavailable: 'No ad is available right now. Try again in a moment.',
-      setSound: 'Sound', setHaptics: 'Vibration', setLang: 'Language', langName: 'English',
-      setPrivacy: 'Ad choices and privacy', setReset: 'Reset progress',
-      setResetSure: 'Tap again to reset everything', resetDone: 'Progress has been reset',
-      close: 'Close', letsGo: "Let's go",
-      how1: 'Tap a piece to turn it a quarter turn.', how1b: 'Here the string is broken.',
-      how2: 'Join the cables so power reaches every lamp.', how2b: 'When all of them shine, the level is done.',
-      how3: 'Fewer moves earn more stars.', how3b: 'Press and hold a piece to pin it.',
-      adSim: 'An ad is shown here in the app', adSimNote: 'Preview without real ads.',
-      adSimWait: 'Wait {n} …', back: 'Back', hint: 'Hint',
-      ariaLamp: 'Lamp', ariaSrc: 'Power socket', ariaCable: 'Cable', ariaOn: 'has power', ariaOff: 'has no power',
-      ariaFixed: 'fixed'
-    }
+    tagline: 'Turn the pieces until the whole string lights up.',
+    play: 'Play level {n}', daily: 'Daily string', dailyNew: 'A new string every day',
+    dailyStreak: '{n} days in a row', dailyDone: 'Done for today', howto: 'How to play',
+    settings: 'Settings', stars: '{n} stars', level: 'Level {n}', wrapTag: 'wraps around',
+    atMost: 'at most {n}', taps: 'Moves', lampsLit: '{a} of {b} lamps lit',
+    tip1: 'Tap a piece to turn it a quarter turn.',
+    tip2: 'Power comes from the yellow square. Every lamp should light up.',
+    tip3: 'Press and hold a piece to pin it once you know it is right.',
+    introLocked: 'Pieces with screws are fixed. They already face the right way.',
+    introHoles: 'Some squares are missing here. Lead the string around the gaps.',
+    introLinks: 'Pieces with the same symbol are linked. Turn one and the other turns too.',
+    introWrap: 'The edges are joined. A cable leaving on the right comes back in on the left.',
+    fixedMsg: 'That piece is fixed.', pinnedMsg: 'You pinned that piece. Press and hold to release it.',
+    pinOn: 'The piece is pinned.', pinOff: 'The piece is free again.',
+    hintDone: 'The highlighted piece is right now and locked.',
+    winLevel: 'Level {n} done', winDaily: 'The daily string is lit',
+    winTaps: 'You used {a} moves.', winBest: 'That earned three stars.', winNeed: 'Three stars need at most {n}.',
+    dailyReward: 'You earned 1 hint.', dailyAgain: 'A new string is waiting tomorrow.',
+    next: 'Next level', retry: 'Try again', home: 'Back to menu',
+    restartTitle: 'Start the level over?', restartText: 'The pieces turn back and your moves reset.',
+    restart: 'Start over', keepPlaying: 'Keep playing',
+    noHintsTitle: 'Out of hints', noHintsText: 'Watch a short ad to get {n} more.',
+    watchAd: 'Watch ad', notNow: 'Not now', gotHints: 'You got {n} hints',
+    adUnavailable: 'No ad is available right now. Try again in a moment.',
+    setSound: 'Sound', setHaptics: 'Vibration',
+    setPrivacy: 'Ad choices and privacy', setReset: 'Reset progress',
+    setResetSure: 'Tap again to reset everything', resetDone: 'Progress has been reset',
+    close: 'Close', letsGo: "Let's go",
+    how1: 'Tap a piece to turn it a quarter turn.', how1b: 'Here the string is broken.',
+    how2: 'Join the cables so power reaches every lamp.', how2b: 'When all of them shine, the level is done.',
+    how3: 'Fewer moves earn more stars.', how3b: 'Press and hold a piece to pin it.',
+    adSim: 'An ad is shown here in the app', adSimNote: 'Preview without real ads.',
+    adSimWait: 'Wait {n} …', back: 'Back', hint: 'Hint',
+    ariaLamp: 'Lamp', ariaSrc: 'Power socket', ariaCable: 'Cable', ariaOn: 'has power', ariaOff: 'has no power',
+    ariaFixed: 'fixed'
   };
 
-  function lang() {
-    if (S.lang) return S.lang;
-    return (navigator.language || 'sv').toLowerCase().indexOf('sv') === 0 ? 'sv' : 'en';
-  }
   function t(key, vars) {
-    var s = STR[lang()][key];
-    if (s === undefined) s = STR.sv[key];
+    var s = STR[key];
     if (vars) for (var k in vars) s = s.replace('{' + k + '}', vars[k]);
     return s;
   }
 
-  // ---------- Bilder (inbäddad SVG) ----------
+  // ---------- Images (inline SVG) ----------
   var ICON = {
     back: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     go: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
@@ -117,7 +73,7 @@
     bolt: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 2 5 13.5h5.5L9.5 22 19 10h-6z" fill="currentColor"/></svg>'
   };
 
-  /** Ritar en bit. Sladdarna ligger i ett lager som vrids, lampa och eluttag i ett som står still. */
+  /** Draws a piece. The cables sit in a layer that turns, the lamp and power socket in one that stays still. */
   function tileHTML(mask, o) {
     var d = '', s, g = o.group;
     if (mask & 1) d += 'M50 50V-1';
@@ -138,14 +94,17 @@
     return s + '<i class="pin"></i></span>';
   }
 
-  /** Namnet med en färg per bokstav, som lamporna på slingan. */
+  /** The name with one color per letter, like the lamps on the string. One line per word. */
   function wordmark() {
-    return 'Ljusslinga'.split('').map(function (ch, k) {
-      return '<span aria-hidden="true" style="--c:' + LETTER[k % LETTER.length] + '">' + ch + '</span>';
+    var k = 0;
+    return 'Twinkle Twist'.split(' ').map(function (word) {
+      return '<span class="word">' + word.split('').map(function (ch) {
+        return '<span aria-hidden="true" style="--c:' + LETTER[k++ % LETTER.length] + '">' + ch + '</span>';
+      }).join('') + '</span>';
     }).join('');
   }
 
-  /** Ljusslingan på menyn: en sladd i två bågar med sex kulörta lampor. */
+  /** The string of lights on the menu: a cable in two arcs with six colored lamps. */
   function swag() {
     var pts = [[32, 41], [95, 59], [158, 50.5], [242, 50.5], [305, 59], [368, 41]];
     var s = '<svg class="swag" viewBox="0 0 400 112" aria-hidden="true"><defs>', k;
@@ -163,9 +122,9 @@
     return s + '</svg>';
   }
 
-  // ---------- Sparat tillstånd ----------
+  // ---------- Saved state ----------
   function defaults() {
-    return { level: 1, stars: 0, best: {}, hints: START_HINTS, sound: true, haptics: true, lang: null,
+    return { level: 1, stars: 0, best: {}, hints: START_HINTS, sound: true, haptics: true,
              daily: { date: null, streak: 0 }, sinceAd: 0, seenHow: false, seen: {}, cur: {} };
   }
   function load() {
@@ -173,16 +132,16 @@
     try {
       var raw = localStorage.getItem(SAVE_KEY);
       if (raw) { var o = JSON.parse(raw); for (var k in o) if (k in d) d[k] = o[k]; }
-    } catch (e) { /* sparning saknas eller är trasig – börja om från början */ }
+    } catch (e) { /* save is missing or broken – start from scratch */ }
     ['best', 'seen', 'cur'].forEach(function (k) { if (!d[k] || typeof d[k] !== 'object') d[k] = {}; });
     if (!d.daily || typeof d.daily !== 'object') d.daily = { date: null, streak: 0 };
     return d;
   }
-  function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) { /* fullt eller avstängt */ } }
+  function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) { /* full or disabled */ } }
 
   var S = load();
-  var G = null;      // pågående parti
-  var cells = [];    // rutornas element, en per ruta
+  var G = null;      // game in progress
+  var cells = [];    // the square elements, one per square
 
   function $(sel, el) { return (el || document).querySelector(sel); }
   function pad(n) { return (n < 10 ? '0' : '') + n; }
@@ -190,7 +149,7 @@
   function todayKey() { return fmt(new Date()); }
   function dayBefore(key) { var d = new Date(key + 'T12:00:00'); d.setDate(d.getDate() - 1); return fmt(d); }
 
-  // ---------- Ljud och vibration ----------
+  // ---------- Sound and vibration ----------
   var ac = null;
   function tone(f, t0, dur, type, vol) {
     var o = ac.createOscillator(), g = ac.createGain();
@@ -208,33 +167,33 @@
       if (ac.state === 'suspended') ac.resume();
       var n = ac.currentTime;
       if (name === 'turn') tone(300, n, 0.05, 'triangle', 0.06);
-      else if (name === 'link') tone(392 * Math.pow(2, amount || 0), n, 0.16, 'sine', 0.12); // ljusare ju mer som lyser
+      else if (name === 'link') tone(392 * Math.pow(2, amount || 0), n, 0.16, 'sine', 0.12); // higher the more is lit
       else if (name === 'nope') tone(150, n, 0.12, 'sawtooth', 0.05);
       else if (name === 'pin') tone(620, n, 0.07, 'square', 0.04);
       else if (name === 'win') [523, 659, 784, 1047, 1319].forEach(function (f, i) { tone(f, n + i * 0.1, 0.26, 'triangle', 0.12); });
-    } catch (e) { /* inget ljud på den här enheten */ }
+    } catch (e) { /* no sound on this device */ }
   }
   function haptic(kind) {
     if (!S.haptics) return;
     try {
       if (bridge) bridge.haptic(kind);
       else if (navigator.vibrate) navigator.vibrate(kind === 'bad' ? [20, 30, 20] : kind === 'ok' ? 18 : 8);
-    } catch (e) { /* saknas */ }
+    } catch (e) { /* not available */ }
   }
 
-  // ---------- Annonser ----------
+  // ---------- Ads ----------
   var adCb = null;
   var Ads = {
-    /** Belönad annons. cb(true) om spelaren såg klart och ska ha sin belöning. */
+    /** Rewarded ad. cb(true) if the player watched to the end and should get the reward. */
     rewarded: function (kind, cb) {
-      if (adCb || $('.adsim')) return; // en annons i taget
+      if (adCb || $('.adsim')) return; // one ad at a time
       if (!bridge) { simAd(true, cb); return; }
       var started = false;
       adCb = cb;
       try { started = !!bridge.showRewarded(kind); } catch (e) { started = false; }
       if (!started) { adCb = null; cb(false); }
     },
-    /** Helskärmsannons mellan nivåer. cb() körs när spelet ska fortsätta. */
+    /** Interstitial between levels. cb() runs when the game should continue. */
     interstitial: function (cb) {
       if (adCb || $('.adsim')) { cb(); return; }
       if (!bridge) { simAd(false, function () { cb(); }); return; }
@@ -260,14 +219,14 @@
     });
   }
 
-  // Anropas av Android-skalet.
-  window.LS = {
+  // Called by the Android shell.
+  window.TT = {
     onReward: function (kind, earned) { var cb = adCb; adCb = null; if (cb) cb(!!earned); },
     onInterstitialClosed: function () { var cb = adCb; adCb = null; if (cb) cb(true); },
     onBack: function () { return goBack(); }
   };
 
-  // ---------- Skärmar ----------
+  // ---------- Screens ----------
   function show(id) {
     $('#home').hidden = id !== 'home';
     $('#game').hidden = id !== 'game';
@@ -282,14 +241,13 @@
   }
 
   function renderHome() {
-    document.documentElement.lang = lang();
     var d = S.daily, today = todayKey();
     var doneToday = d.date === today;
     var alive = doneToday || d.date === dayBefore(today);
     var sub = doneToday ? t('dailyDone') : (alive && d.streak > 1 ? t('dailyStreak', { n: d.streak }) : t('dailyNew'));
     $('#home').innerHTML = swag() +
       '<div class="home-body">' +
-        '<div><h1 class="wordmark" aria-label="Ljusslinga">' + wordmark() + '</h1><p class="tagline">' + t('tagline') + '</p></div>' +
+        '<div><h1 class="wordmark" aria-label="Twinkle Twist">' + wordmark() + '</h1><p class="tagline">' + t('tagline') + '</p></div>' +
         '<div class="menu">' +
           '<button class="btn" data-act="play">' + t('play', { n: S.level }) + ICON.go + '</button>' +
           '<button class="btn quiet" data-act="daily"><span>' + t('daily') + '<small>' + sub + '</small></span>' + ICON.go + '</button>' +
@@ -309,7 +267,7 @@
     renderHome();
   }
 
-  // ---------- Parti ----------
+  // ---------- Game ----------
   function limits(p) {
     return { three: p.par + Math.max(2, Math.round(p.par * 0.2)), two: p.par + Math.max(5, Math.round(p.par * 0.6)) };
   }
@@ -338,7 +296,7 @@
     persist();
   }
 
-  /** Väljer raden under brädet: tips på de första nivåerna och en förklaring första gången något nytt dyker upp. */
+  /** Picks the line below the board: tips on the first levels and an explanation the first time something new appears. */
   function introFor(mode, key, p) {
     if (mode === 'level' && key <= 3) return t('tip' + key);
     var feats = [['wrap', p.wrap, 'introWrap'], ['links', p.groups.length > 0, 'introLinks'],
@@ -420,13 +378,13 @@
     b.addEventListener('pointerleave', cancel);
     b.addEventListener('contextmenu', function (e) { e.preventDefault(); });
     b.addEventListener('click', function (e) {
-      if (e.detail !== 0) return; // pekare hanteras ovan; detta är tangentbord och skärmläsare
+      if (e.detail !== 0) return; // pointers are handled above; this is keyboard and screen readers
       var el = e.target.closest('button.cell');
       if (el && G && !G.over) tap(+el.dataset.i);
     });
   }
 
-  /** Räknar om vad som lyser och uppdaterar bara det som ändrats. */
+  /** Recomputes what is lit and updates only what changed. */
   function paint() {
     var p = G.p, lit = C.lit(p, G.r), i, lampsOn = 0;
     G.lit = lit;
@@ -481,7 +439,7 @@
     setTimeout(function () { el.classList.remove('turning'); }, 220);
   }
 
-  /** Ett drag: vrid biten (och dess tvilling) ett kvarts varv medurs. */
+  /** One move: turn the piece (and its twin) a quarter turn clockwise. */
   function tap(i) {
     var p = G.p;
     if (G.over) return;
@@ -496,7 +454,7 @@
     if (lit.done) win(); else persist();
   }
 
-  /** Håll inne: nåla fast en bit (och dess tvilling) så att den inte vrids av misstag. */
+  /** Press and hold: pin a piece (and its twin) so it is not turned by mistake. */
   function togglePin(i) {
     var p = G.p;
     if (G.over || G.fixed[i]) return;
@@ -549,7 +507,7 @@
     setTimeout(function () { openWin(stars, firstDaily); }, 1300);
   }
 
-  // ---------- Dialoger ----------
+  // ---------- Dialogs ----------
   var modalBack = 'close';
   function openModal(html, back) {
     closeModal();
@@ -630,7 +588,6 @@
     openModal('<h2>' + t('settings') + '</h2>' +
       sw('setSound', t('setSound'), S.sound) +
       sw('setHaptics', t('setHaptics'), S.haptics) +
-      '<button class="row" data-act="setLang"><span>' + t('setLang') + '</span><span class="val">' + t('langName') + '</span></button>' +
       (privacy ? '<button class="row" data-act="privacy"><span>' + t('setPrivacy') + '</span></button>' : '') +
       '<button class="row danger" data-act="reset"><span id="reset-label">' + t('setReset') + '</span></button>' +
       '<button class="btn quiet" data-act="close">' + t('close') + '</button>');
@@ -638,17 +595,7 @@
 
   function flip(el, on) { el.setAttribute('aria-checked', on ? 'true' : 'false'); }
 
-  /** Efter språkbyte: rita om det som syns. */
-  function refresh() {
-    document.documentElement.lang = lang();
-    if (G && !$('#game').hidden) {
-      $('#game').innerHTML = shell();
-      buildBoard();
-      paint();
-    } else renderHome();
-  }
-
-  // ---------- Knappar ----------
+  // ---------- Buttons ----------
   var ACT = {
     play: function () {
       var go = function () { start('level', S.level); };
@@ -688,11 +635,10 @@
     },
     setSound: function (el) { S.sound = !S.sound; save(); flip(el, S.sound); sfx('link', 0.5); },
     setHaptics: function (el) { S.haptics = !S.haptics; save(); flip(el, S.haptics); haptic('ok'); },
-    setLang: function () { S.lang = lang() === 'sv' ? 'en' : 'sv'; save(); refresh(); openSettings(); },
-    privacy: function () { try { bridge.showPrivacyOptions(); } catch (e) { /* saknas */ } },
+    privacy: function () { try { bridge.showPrivacyOptions(); } catch (e) { /* not available */ } },
     reset: function () {
       if (!resetArmed) { resetArmed = true; $('#reset-label').textContent = t('setResetSure'); return; }
-      var keep = { sound: S.sound, haptics: S.haptics, lang: S.lang, seenHow: S.seenHow };
+      var keep = { sound: S.sound, haptics: S.haptics, seenHow: S.seenHow };
       S = defaults();
       for (var k in keep) S[k] = keep[k];
       save();
@@ -710,7 +656,7 @@
   document.addEventListener('visibilitychange', function () { if (document.hidden) persist(); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') goBack(); });
 
-  /** Bakåt-knappen. Returnerar true om spelet tog hand om den, annars får appen stängas. */
+  /** The back button. Returns true if the game handled it, otherwise the app may close. */
   function goBack() {
     if ($('.adsim')) return true;
     if ($('.backdrop')) {

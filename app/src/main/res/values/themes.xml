@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.Ljusslinga" parent="android:Theme.Material.NoActionBar">
+    <style name="Theme.TwinkleTwist" parent="android:Theme.Material.NoActionBar">
         <item name="android:windowBackground">@drawable/bg_gradient</item>
         <item name="android:colorAccent">@color/accent</item>
         <item name="android:windowLightStatusBar">true</item>

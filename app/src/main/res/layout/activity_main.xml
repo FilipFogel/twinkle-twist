@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Spelet (WebView) överst, annonsbanderollen i en egen yta under så att den aldrig täcker brädet. -->
+<!-- The game (WebView) on top, the ad banner in its own area below so it never covers the board. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/root"
     android:layout_width="match_parent"

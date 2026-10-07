@@ -1,7 +1,7 @@
-# Bygger en debug-APK med AdMob (testannonser) varje gång du pushar till main,
-# eller när du trycker "Run workflow" under fliken Actions.
-# APK:n hamnar under körningens "Artifacts".
-name: Bygg APK
+# Builds a debug APK with AdMob (test ads) every time you push to main,
+# or when you press "Run workflow" under the Actions tab.
+# The APK ends up under the run's "Artifacts".
+name: Build APK
 
 on:
   push:
@@ -18,11 +18,11 @@ jobs:
           distribution: temurin
           java-version: 17
       - uses: gradle/actions/setup-gradle@v4
-      - name: Bygg debug-APK
+      - name: Build debug APK
         run: |
           chmod +x gradlew
           ./gradlew assembleDebug --stacktrace
       - uses: actions/upload-artifact@v4
         with:
-          name: ljusslinga-debug-apk
+          name: twinkle-twist-debug-apk
           path: app/build/outputs/apk/debug/*.apk

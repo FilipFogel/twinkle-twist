@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Behövs bara för annonserna. Själva spelet fungerar helt utan nät. -->
+    <!-- Only needed for the ads. The game itself works fully offline. -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
@@ -13,9 +13,9 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Ljusslinga">
+        android:theme="@style/Theme.TwinkleTwist">
 
-        <!-- AdMob app-id. Värdet ligger i res/values/ads.xml (test-id) och byts i release-bygget. -->
+        <!-- AdMob app id. The value lives in res/values/ads.xml (test id) and is replaced in the release build. -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="@string/admob_app_id" />

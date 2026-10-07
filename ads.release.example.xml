@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    MALL. Kopiera till app/src/release/res/values/ads.xml och fyll i id:n från AdMob.
-    App-id har ett ~ i sig, annonsenheternas id har ett /.
+    TEMPLATE. Copy to app/src/release/res/values/ads.xml and fill in the ids from AdMob.
+    The app id contains a ~, the ad unit ids contain a /.
 -->
 <resources>
     <string name="admob_app_id" translatable="false">ca-app-pub-XXXXXXXXXXXXXXXX~YYYYYYYYYY</string>

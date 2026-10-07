@@ -9,5 +9,5 @@ captures/
 .cxx/
 *.jks
 *.keystore
-# Riktiga annons-id:n hör inte hemma i versionshanteringen om repot är publikt
+# Real ad unit ids do not belong in version control if the repo is public
 app/src/release/res/values/ads.xml

@@ -1,4 +1,4 @@
-package app.ljusslinga.game
+package app.twinkletwist.game
 
 import android.annotation.SuppressLint
 import android.content.Intent
@@ -21,8 +21,8 @@ import androidx.webkit.WebViewAssetLoader
 import androidx.webkit.WebViewClientCompat
 
 /**
- * Appens enda skärm. Spelet är skrivet i HTML/JavaScript (mappen assets) och körs i en WebView.
- * Android-delen sköter det som kräver riktig app: annonser, samtycke, vibration och bakåt-knappen.
+ * The app's only screen. The game is written in HTML/JavaScript (the assets folder) and runs in a WebView.
+ * The Android side handles what needs a real app: ads, consent, vibration and the back button.
  */
 class MainActivity : ComponentActivity() {
 
@@ -38,7 +38,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // Håll innehållet undan från statusfält, navigeringsfält och kamerahål.
+        // Keep the content clear of the status bar, navigation bar and camera cutout.
         val root = findViewById<View>(R.id.root)
         ViewCompat.setOnApplyWindowInsetsListener(root) { view, insets ->
             val bars = insets.getInsets(
@@ -54,18 +54,18 @@ class MainActivity : ComponentActivity() {
         webView.isHorizontalScrollBarEnabled = false
         webView.overScrollMode = View.OVER_SCROLL_NEVER
         webView.isHapticFeedbackEnabled = true
-        webView.isLongClickable = false // spelet har ett eget "håll inne" för att nåla fast bitar
+        webView.isLongClickable = false // the game has its own "press and hold" to pin pieces
         webView.setOnLongClickListener { true }
         webView.settings.apply {
             javaScriptEnabled = true
-            domStorageEnabled = true // spelets sparning (localStorage)
+            domStorageEnabled = true // the game's save data (localStorage)
             mediaPlaybackRequiresUserGesture = false
             allowFileAccess = false
             allowContentAccess = false
-            textZoom = 100 // systemets textstorlek ska inte spräcka brädet
+            textZoom = 100 // the system text size must not break the board
         }
 
-        // Spelets filer serveras lokalt från assets under en https-adress. Inget hämtas från nätet.
+        // The game's files are served locally from assets under an https address. Nothing is fetched from the network.
         val assetLoader = WebViewAssetLoader.Builder()
             .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(this))
             .build()
@@ -77,11 +77,11 @@ class MainActivity : ComponentActivity() {
 
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 if (request.url.host == WebViewAssetLoader.DEFAULT_DOMAIN) return false
-                // Eventuella externa länkar öppnas i webbläsaren, aldrig inne i spelet.
+                // Any external links open in the browser, never inside the game.
                 try {
                     startActivity(Intent(Intent.ACTION_VIEW, request.url))
                 } catch (e: Exception) {
-                    // ingen app kan öppna länken
+                    // no app can open the link
                 }
                 return true
             }
@@ -93,10 +93,10 @@ class MainActivity : ComponentActivity() {
         webView.addJavascriptInterface(GameBridge(this, webView, ads), "AndroidBridge")
         webView.loadUrl(START_URL)
 
-        // Bakåt: låt spelet stänga dialoger eller gå till menyn först. Stäng appen först från menyn.
+        // Back: let the game close dialogs or go to the menu first. Only close the app from the menu.
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                webView.evaluateJavascript("(window.LS && window.LS.onBack()) ? 'handled' : 'exit'") { result ->
+                webView.evaluateJavascript("(window.TT && window.TT.onBack()) ? 'handled' : 'exit'") { result ->
                     if (result == null || !result.contains("handled")) finish()
                 }
             }
