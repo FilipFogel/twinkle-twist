@@ -1,3 +1,4 @@
+import java.util.Properties
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -5,18 +6,36 @@ plugins {
     alias(libs.plugins.kotlin.android)
 }
 
+// The upload key for Google Play. keystore.properties and the .jks file stay out of git.
+// Without the file the release build is simply unsigned.
+val keystoreProps = Properties().apply {
+    val file = rootProject.file("keystore.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+}
+
 android {
-    // Change to your own unique package name before publishing (e.g. com.yourname.twinkletwist).
-    // It cannot be changed after the first upload to Google Play.
     namespace = "app.twinkletwist.game"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "app.twinkletwist.game"
+        // The package name on Google Play. It cannot be changed after the first upload.
+        applicationId = "app.twinkletwist"
         minSdk = 26
         targetSdk = 36
+        // Raise versionCode by 1 for every upload to Play Console.
         versionCode = 1
         versionName = "1.0.0"
+    }
+
+    signingConfigs {
+        if (keystoreProps.isNotEmpty()) {
+            create("upload") {
+                storeFile = rootProject.file(keystoreProps.getProperty("storeFile"))
+                storePassword = keystoreProps.getProperty("storePassword")
+                keyAlias = keystoreProps.getProperty("keyAlias")
+                keyPassword = keystoreProps.getProperty("keyPassword")
+            }
+        }
     }
 
     buildTypes {
@@ -24,6 +43,7 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.findByName("upload")
         }
     }
 

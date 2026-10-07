@@ -9,5 +9,7 @@ captures/
 .cxx/
 *.jks
 *.keystore
+keystore.properties
 # Real ad unit ids do not belong in version control if the repo is public
 app/src/release/res/values/ads.xml
+release/

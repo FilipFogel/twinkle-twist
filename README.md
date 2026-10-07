@@ -38,6 +38,16 @@ Status: the Gradle build has not been run yet. The Kotlin code is type-checked a
 API 36, but the calls to AdMob, consent and AndroidX have only been checked against local stubs.
 Expect the first build to possibly need a small version adjustment in `gradle/libs.versions.toml`.
 
+## Release build for Google Play
+
+The release build is signed with the upload key in `upload-keystore.jks`. Gradle reads its
+passwords from `keystore.properties`. Neither file is in git, so keep a backup of both. Without
+them you have to ask Google Play support to reset the upload key.
+
+1. Raise `versionCode` by 1 in `app/build.gradle.kts`, and `versionName` if you like.
+2. Run `./gradlew bundleRelease` (needs a JDK 17+ as `JAVA_HOME`).
+3. Upload `app/build/outputs/bundle/release/app-release.aab` in Play Console.
+
 ## Turning on real ads
 
 1. Create the app in AdMob and three ad units: banner, interstitial and rewarded.
@@ -55,8 +65,8 @@ Ads are shown like this, and can be changed at the top of `game.js`:
 
 ## Before publishing
 
-- Change `applicationId` and `namespace` in `app/build.gradle.kts` to your own package name. It
-  cannot be changed after the first upload.
+- The package name on Google Play is `app.twinkletwist` (`applicationId` in
+  `app/build.gradle.kts`). It cannot be changed after the first upload.
 - Choose the target audience 13 and older in Play Console. If you target younger children, the
   Families policy applies, and that requires different ad settings.
 - Fill in Data safety: the ads SDK collects device ids and approximate location.
