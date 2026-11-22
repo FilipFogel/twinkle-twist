@@ -32,10 +32,10 @@ From 22 November through 6 January, every year, the game dresses up for Christma
 - Snow falls on the menu.
 - A flurry of snow falls when a level or the daily string is done.
 - `jingle-bells.mp3` plays in a loop as background music from the moment the app starts. It pauses
-  when the app is left and during ads. Players can turn it off with the Music switch in Settings,
-  which is only shown while the theme is on.
+  when the app is left and during ads. Players can turn it off with the note button at the top of
+  the game screen or the Music switch in Settings. Both are only shown while the theme is on.
 
-Outside those dates there is no snow, no music and no Music switch. The dates, the music volume
+Outside those dates there is no snow, no music and no music controls. The dates, the music volume
 and the number of snowflakes are set at the top of `game.js`. To change the music, replace
 `app/src/main/assets/jingle-bells.mp3`.
 

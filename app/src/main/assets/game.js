@@ -75,6 +75,7 @@
     sliders: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h8M18 7h2M4 17h2M12 17h8"/><circle cx="15" cy="7" r="2.6"/><circle cx="9" cy="17" r="2.6"/></svg>',
     bulb: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.6 10.8c.6.5 1.1 1.3 1.1 2.2h5c0-.9.5-1.7 1.1-2.2A6 6 0 0 0 12 3z"/></svg>',
     redo: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.6-5.9"/><path d="M4 4v5h5"/></svg>',
+    note: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><g class="note"><path d="M9.5 17.5V6l10-2.2v11.7"/><circle cx="7" cy="17.5" r="2.5"/><circle cx="17" cy="15.5" r="2.5"/></g><path class="slash" d="M4 3.5l16.5 17"/></svg>',
     star: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z"/></svg>',
     bolt: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 2 5 13.5h5.5L9.5 22 19 10h-6z" fill="currentColor"/></svg>'
   };
@@ -405,7 +406,11 @@
     return '<header class="bar">' +
         '<button class="icon-btn" data-act="back" aria-label="' + t('back') + '">' + ICON.back + '</button>' +
         '<div class="bar-title"><strong>' + title + '</strong><span>' + sub + '</span></div>' +
-        '<button class="icon-btn" data-act="settings" aria-label="' + t('settings') + '">' + ICON.sliders + '</button>' +
+        '<div class="bar-end">' +
+          // music on/off, only while there is music. It sits here because the row below has no room left on narrow phones.
+          (isXmas() ? '<button class="icon-btn" role="switch" aria-checked="' + (S.music ? 'true' : 'false') + '" data-act="setMusic" aria-label="' + t('setMusic') + '">' + ICON.note + '</button>' : '') +
+          '<button class="icon-btn" data-act="settings" aria-label="' + t('settings') + '">' + ICON.sliders + '</button>' +
+        '</div>' +
       '</header>' +
       '<div class="hud">' +
         '<div class="hud-taps" aria-label="' + t('taps') + '"><b id="hud-taps">0</b><span class="goal" id="hud-goal"></span></div>' +
@@ -717,7 +722,11 @@
       });
     },
     setSound: function (el) { S.sound = !S.sound; save(); flip(el, S.sound); sfx('link', 0.5); },
-    setMusic: function (el) { S.music = !S.music; save(); flip(el, S.music); musicSync(); },
+    setMusic: function () {
+      S.music = !S.music; save(); musicSync();
+      // the button on the game screen and the switch in Settings show the same thing
+      document.querySelectorAll('[data-act="setMusic"]').forEach(function (el) { flip(el, S.music); });
+    },
     setHaptics: function (el) { S.haptics = !S.haptics; save(); flip(el, S.haptics); haptic('ok'); },
     privacy: function () { try { bridge.showPrivacyOptions(); } catch (e) { /* not available */ } },
     reset: function () {
