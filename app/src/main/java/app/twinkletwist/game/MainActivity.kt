@@ -104,12 +104,16 @@ class MainActivity : ComponentActivity() {
         ads.start()
     }
 
+    // The game pauses its music itself when the page is hidden. Telling it here as well makes sure
+    // the music never keeps playing behind an ad or after the player has left the app.
     override fun onResume() {
         super.onResume()
         webView.onResume()
+        webView.evaluateJavascript("window.TT && window.TT.onResume()", null)
     }
 
     override fun onPause() {
+        webView.evaluateJavascript("window.TT && window.TT.onPause()", null)
         webView.onPause()
         super.onPause()
     }

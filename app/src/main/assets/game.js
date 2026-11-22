@@ -1,4 +1,4 @@
-/* Twinkle Twist – UI: screens, taps, hints, stars, saving and ads.
+/* Twinkle Twist – UI: screens, taps, hints, stars, saving, ads and the Christmas theme.
    Ads are shown by the Android shell via window.AndroidBridge. Without a bridge (e.g. in a
    regular browser) a simple placeholder is shown so the flow can be tried out. */
 (function () {
@@ -14,6 +14,12 @@
   var LEVELS_BETWEEN_ADS = 3;   // interstitial every Nth completed level …
   var FIRST_AD_LEVEL = 6;       // … but never before this level
   var LONG_PRESS_MS = 420;      // how long to press and hold to pin a piece
+  var XMAS_FROM = [11, 22];     // the Christmas theme (snow and music) runs from this month and day …
+  var XMAS_TO = [1, 6];         // … through this one, every year
+  var MUSIC_SRC = 'jingle-bells.mp3';
+  var MUSIC_VOLUME = 0.3;       // 0–1, kept low so the game's own sounds are still heard
+  var SNOW_HOME = 40;           // snowflakes falling on the menu
+  var SNOW_WIN = 46;            // snowflakes when a level is done
   var LAMP = ['#FF5D5D', '#FFB81F', '#22C58B', '#3B9BFF', '#9B6BFF', '#FF6FB5'];
   var LETTER = ['#E5484D', '#F08400', '#12A679', '#2F7BFF', '#8B5CF6', '#E64C9C']; // wordmark letters, darker for legibility
 
@@ -43,7 +49,7 @@
     noHintsTitle: 'Out of hints', noHintsText: 'Watch a short ad to get {n} more.',
     watchAd: 'Watch ad', notNow: 'Not now', gotHints: 'You got {n} hints',
     adUnavailable: 'No ad is available right now. Try again in a moment.',
-    setSound: 'Sound', setHaptics: 'Vibration',
+    setSound: 'Sound', setMusic: 'Music', setHaptics: 'Vibration',
     setPrivacy: 'Ad choices and privacy', setReset: 'Reset progress',
     setResetSure: 'Tap again to reset everything', resetDone: 'Progress has been reset',
     close: 'Close', letsGo: "Let's go",
@@ -124,14 +130,17 @@
 
   // ---------- Saved state ----------
   function defaults() {
-    return { level: 1, stars: 0, best: {}, hints: START_HINTS, sound: true, haptics: true,
+    return { level: 1, stars: 0, best: {}, hints: START_HINTS, sound: true, music: true, haptics: true,
              daily: { date: null, streak: 0 }, sinceAd: 0, seenHow: false, seen: {}, cur: {} };
   }
   function load() {
     var d = defaults();
     try {
       var raw = localStorage.getItem(SAVE_KEY);
-      if (raw) { var o = JSON.parse(raw); for (var k in o) if (k in d) d[k] = o[k]; }
+      if (raw) {
+        var o = JSON.parse(raw); for (var k in o) if (k in d) d[k] = o[k];
+        if (!('music' in o)) d.music = !!d.sound; // saved before there was music: if the sound was off, the music starts off too
+      }
     } catch (e) { /* save is missing or broken – start from scratch */ }
     ['best', 'seen', 'cur'].forEach(function (k) { if (!d[k] || typeof d[k] !== 'object') d[k] = {}; });
     if (!d.daily || typeof d.daily !== 'object') d.daily = { date: null, streak: 0 };
@@ -181,6 +190,73 @@
     } catch (e) { /* not available */ }
   }
 
+  // ---------- Christmas theme: music and snow ----------
+  var xmasForced = /[?&]xmas=([01])/.exec(location.search); // index.html?xmas=1 or ?xmas=0 previews the theme on or off
+  function isXmas() {
+    if (xmasForced) return xmasForced[1] === '1';
+    var d = new Date(), md = (d.getMonth() + 1) * 100 + d.getDate();
+    var from = XMAS_FROM[0] * 100 + XMAS_FROM[1], to = XMAS_TO[0] * 100 + XMAS_TO[1];
+    return from <= to ? md >= from && md <= to : md >= from || md <= to;
+  }
+
+  var music = null, appPaused = false;
+  /** Starts or pauses the background music so it matches the season, the setting and whether the app is in front. */
+  function musicSync() {
+    if (!(S.music && !appPaused && !document.hidden && isXmas())) {
+      if (music) music.pause();
+      return;
+    }
+    if (!music) {
+      music = new Audio();
+      music.loop = true;
+      music.volume = MUSIC_VOLUME;
+      // Read the whole file into memory first. The app serves its files without support for seeking,
+      // and looping has to seek back to the start. Opened straight from disk the fetch fails; the plain address works there.
+      fetch(MUSIC_SRC).then(function (r) { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+        .then(function (buf) { return URL.createObjectURL(new Blob([buf], { type: 'audio/mpeg' })); }, function () { return MUSIC_SRC; })
+        .then(function (url) { music.src = url; musicSync(); });
+      return;
+    }
+    if (!music.getAttribute('src') || !music.paused) return;
+    var p = music.play();
+    if (p && p.catch) p.catch(function () { /* a browser wants a tap first; the next tap tries again */ });
+  }
+
+  var snowAt = 0;
+  /** Snowflakes. 'home' is a steady snowfall behind the menu, 'win' a flurry in front of the board, '' clears it. */
+  function snow(mode) {
+    var el = $('#snow'), win = mode === 'win', html = '', i;
+    function f(x) { return x.toFixed(1); }
+    if (mode && isXmas()) {
+      for (i = win ? SNOW_WIN : SNOW_HOME; i > 0; i--) {
+        var z = Math.pow(Math.random(), 1.4); // depth: 0 is far away (small, slow, faint), 1 is close
+        var size = 8 + z * 22, fall = (win ? 10 : 16) - z * (win ? 4 : 7) + Math.random() * 2;
+        // the negative delay puts every flake somewhere along its fall, so the snow is in the air right away
+        html += '<i class="flake' + (size < 14 ? ' dot' : '') + '" style="left:' + f(Math.random() * 104 - 2) + '%;' +
+          '--s:' + f(size) + 'px;--o:' + (0.7 + z * 0.3).toFixed(2) + ';--t:' + f(fall) + 's;--d:' + f(-Math.random() * fall) + 's;' +
+          '--w:' + f(6 + z * 14 + Math.random() * 6) + 'px;--u:' + f(2.4 + Math.random() * 2.4) + 's;' +
+          '--r:' + Math.round(Math.random() * 240 - 120) + 'deg;--y:' + f(Math.random() * 100) + '%"><b></b></i>';
+      }
+    }
+    el.className = html ? 'snow ' + mode : 'snow';
+    el.innerHTML = html;
+    el.hidden = !html;
+    snowAt = performance.now();
+  }
+
+  /** Moves the flurry in behind the win dialog, so it falls over the dimmed board but not over the text.
+      The copy gets the time that has passed (--e), so every flake carries on from where it was. */
+  function snowBehindDialog() {
+    var el = $('#snow'), back = $('.backdrop');
+    if (!back || !el.classList.contains('win')) return;
+    var copy = document.createElement('div');
+    copy.className = 'snow';
+    copy.style.setProperty('--e', ((performance.now() - snowAt) / 1000).toFixed(2) + 's');
+    copy.innerHTML = el.innerHTML;
+    back.insertBefore(copy, back.firstChild);
+    setTimeout(function () { if (el.classList.contains('win')) snow(''); }, 200); // once the dialog has faded in
+  }
+
   // ---------- Ads ----------
   var adCb = null;
   var Ads = {
@@ -223,7 +299,9 @@
   window.TT = {
     onReward: function (kind, earned) { var cb = adCb; adCb = null; if (cb) cb(!!earned); },
     onInterstitialClosed: function () { var cb = adCb; adCb = null; if (cb) cb(true); },
-    onBack: function () { return goBack(); }
+    onBack: function () { return goBack(); },
+    onPause: function () { appPaused = true; musicSync(); },
+    onResume: function () { appPaused = false; musicSync(); }
   };
 
   // ---------- Screens ----------
@@ -259,6 +337,7 @@
         '</div>' +
       '</div>';
     show('home');
+    snow('home');
   }
 
   function goHome() {
@@ -293,6 +372,7 @@
     paint();
     setMsg(introFor(mode, key, p), '');
     show('game');
+    snow('');
     persist();
   }
 
@@ -492,6 +572,7 @@
     $('#board').classList.add('won');
     setMsg('', '');
     sfx('win');
+    snow('win');
     if (G.mode === 'level') {
       var prev = S.best[G.key] || 0;
       if (stars > prev) { S.stars += stars - prev; S.best[G.key] = stars; }
@@ -541,6 +622,7 @@
       openModal(starsHTML(stars) + '<h2>' + t('winDaily') + '</h2><p>' + text + ' ' + extra + '</p>' +
         '<button class="btn" data-act="home">' + t('home') + ICON.go + '</button>', 'home');
     }
+    snowBehindDialog();
   }
 
   function openNoHints() {
@@ -587,6 +669,7 @@
     try { privacy = !!(bridge && bridge.privacyOptionsRequired()); } catch (e) { privacy = false; }
     openModal('<h2>' + t('settings') + '</h2>' +
       sw('setSound', t('setSound'), S.sound) +
+      (isXmas() ? sw('setMusic', t('setMusic'), S.music) : '') +
       sw('setHaptics', t('setHaptics'), S.haptics) +
       (privacy ? '<button class="row" data-act="privacy"><span>' + t('setPrivacy') + '</span></button>' : '') +
       '<button class="row danger" data-act="reset"><span id="reset-label">' + t('setReset') + '</span></button>' +
@@ -634,11 +717,12 @@
       });
     },
     setSound: function (el) { S.sound = !S.sound; save(); flip(el, S.sound); sfx('link', 0.5); },
+    setMusic: function (el) { S.music = !S.music; save(); flip(el, S.music); musicSync(); },
     setHaptics: function (el) { S.haptics = !S.haptics; save(); flip(el, S.haptics); haptic('ok'); },
     privacy: function () { try { bridge.showPrivacyOptions(); } catch (e) { /* not available */ } },
     reset: function () {
       if (!resetArmed) { resetArmed = true; $('#reset-label').textContent = t('setResetSure'); return; }
-      var keep = { sound: S.sound, haptics: S.haptics, seenHow: S.seenHow };
+      var keep = { sound: S.sound, music: S.music, haptics: S.haptics, seenHow: S.seenHow };
       S = defaults();
       for (var k in keep) S[k] = keep[k];
       save();
@@ -653,7 +737,8 @@
     var fn = ACT[el.getAttribute('data-act')];
     if (fn) fn(el);
   });
-  document.addEventListener('visibilitychange', function () { if (document.hidden) persist(); });
+  document.addEventListener('visibilitychange', function () { if (document.hidden) persist(); musicSync(); });
+  document.addEventListener('pointerup', function () { musicSync(); }, true); // browsers only let music start after a tap
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') goBack(); });
 
   /** The back button. Returns true if the game handled it, otherwise the app may close. */
@@ -668,4 +753,5 @@
   }
 
   renderHome();
+  musicSync();
 })();

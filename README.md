@@ -25,6 +25,24 @@ The level curve lives in `levelSpec()` in `core.js` and is easy to change.
 | Ads | `AdsManager.kt` | All AdMob code: consent, interstitial, rewarded ad. |
 | Ad unit ids | `app/src/main/res/values/ads.xml` | Google's test ids. Real ids go in the release build, see below. |
 
+## Christmas theme
+
+From 22 November through 6 January, every year, the game dresses up for Christmas:
+
+- Snow falls on the menu.
+- A flurry of snow falls when a level or the daily string is done.
+- `jingle-bells.mp3` plays in a loop as background music from the moment the app starts. It pauses
+  when the app is left and during ads. Players can turn it off with the Music switch in Settings,
+  which is only shown while the theme is on.
+
+Outside those dates there is no snow, no music and no Music switch. The dates, the music volume
+and the number of snowflakes are set at the top of `game.js`. To change the music, replace
+`app/src/main/assets/jingle-bells.mp3`.
+
+To see the game with the theme on or off regardless of the date, open
+`app/src/main/assets/index.html` in a browser and add `?xmas=1` or `?xmas=0` to the address.
+A browser only starts the music after the first tap. The app starts it right away.
+
 ## Building
 
 **Android Studio:** open the folder, wait for the sync to finish and press Run. If Android Studio

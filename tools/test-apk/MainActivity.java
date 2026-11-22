@@ -112,6 +112,7 @@ public class MainActivity extends Activity {
         if (name.endsWith(".woff2")) return "font/woff2";
         if (name.endsWith(".svg")) return "image/svg+xml";
         if (name.endsWith(".png")) return "image/png";
+        if (name.endsWith(".mp3")) return "audio/mpeg";
         return "application/octet-stream";
     }
 
@@ -127,14 +128,18 @@ public class MainActivity extends Activity {
         });
     }
 
+    // The game pauses its music itself when the page is hidden. Telling it here as well makes sure
+    // the music never keeps playing after the player has left the app.
     @Override
     protected void onResume() {
         super.onResume();
         webView.onResume();
+        webView.evaluateJavascript("window.TT && window.TT.onResume()", null);
     }
 
     @Override
     protected void onPause() {
+        webView.evaluateJavascript("window.TT && window.TT.onPause()", null);
         webView.onPause();
         super.onPause();
     }
