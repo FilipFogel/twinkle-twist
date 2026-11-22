@@ -22,7 +22,7 @@ The level curve lives in `levelSpec()` in `core.js` and is easy to change.
 | The game | `app/src/main/assets/` | HTML, CSS and JavaScript. `core.js` generates levels, `game.js` is the UI. |
 | Android shell | `app/src/main/java/.../MainActivity.kt` | Shows the game in a WebView and handles the back button. |
 | The bridge | `GameBridge.kt` | What the game can ask the app for: ads, vibration, privacy choices. |
-| Ads | `AdsManager.kt` | All AdMob code: consent, banner, interstitial, rewarded ad. |
+| Ads | `AdsManager.kt` | All AdMob code: consent, interstitial, rewarded ad. |
 | Ad unit ids | `app/src/main/res/values/ads.xml` | Google's test ids. Real ids go in the release build, see below. |
 
 ## Building
@@ -50,7 +50,7 @@ them you have to ask Google Play support to reset the upload key.
 
 ## Turning on real ads
 
-1. Create the app in AdMob and three ad units: banner, interstitial and rewarded.
+1. Create the app in AdMob and two ad units: interstitial and rewarded.
 2. Copy `ads.release.example.xml` to `app/src/release/res/values/ads.xml` and fill in the ids.
    The debug build keeps showing test ads, the release build shows real ones.
 3. Create a GDPR message in AdMob under Privacy & messaging. The app shows it automatically.
@@ -59,7 +59,6 @@ them you have to ask Google Play support to reset the upload key.
 
 Ads are shown like this, and can be changed at the top of `game.js`:
 
-- A banner below the board, in its own area.
 - An interstitial every third completed level, starting at level 6 at the earliest and at most one per minute.
 - A rewarded ad gives 2 hints when the player has run out.
 

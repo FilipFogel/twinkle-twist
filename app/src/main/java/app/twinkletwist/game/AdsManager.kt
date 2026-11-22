@@ -5,11 +5,8 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import android.util.Log
-import android.widget.FrameLayout
 import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.AdRequest
-import com.google.android.gms.ads.AdSize
-import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.MobileAds
@@ -26,7 +23,6 @@ import java.util.concurrent.atomic.AtomicBoolean
  * All AdMob code in one place.
  *
  *  - Consent (GDPR) is gathered with Google's UMP before any ads are loaded.
- *  - Banner: sits in its own area below the game.
  *  - Interstitial: shown between levels when the game asks for it.
  *  - Rewarded ad: grants new hints.
  *
@@ -34,7 +30,6 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 class AdsManager(
     private val activity: Activity,
-    private val bannerContainer: FrameLayout,
     private val runJs: (String) -> Unit
 ) {
 
@@ -42,7 +37,6 @@ class AdsManager(
     private val initialized = AtomicBoolean(false)
     private val handler = Handler(Looper.getMainLooper())
 
-    private var banner: AdView? = null
     private var interstitial: InterstitialAd? = null
     private var rewarded: RewardedAd? = null
     private var loadingInterstitial = false
@@ -100,33 +94,10 @@ class AdsManager(
             MobileAds.initialize(activity) {}
             activity.runOnUiThread {
                 if (destroyed) return@runOnUiThread
-                loadBanner()
                 loadInterstitial()
                 loadRewarded()
             }
         }.start()
-    }
-
-    // ---------- Banner ----------
-
-    private fun loadBanner() {
-        val size = bannerSize()
-        val view = AdView(activity)
-        view.adUnitId = activity.getString(R.string.ad_unit_banner)
-        view.setAdSize(size)
-        bannerContainer.minimumHeight = size.getHeightInPixels(activity) // reserve space so the board does not jump
-        bannerContainer.removeAllViews()
-        bannerContainer.addView(view)
-        view.loadAd(AdRequest.Builder().build())
-        banner = view
-    }
-
-    @Suppress("DEPRECATION")
-    private fun bannerSize(): AdSize {
-        val metrics = activity.resources.displayMetrics
-        val widthPx = if (bannerContainer.width > 0) bannerContainer.width else metrics.widthPixels
-        val widthDp = (widthPx / metrics.density).toInt()
-        return AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(activity, widthDp)
     }
 
     // ---------- Interstitial ----------
@@ -136,10 +107,12 @@ class AdsManager(
 
     private fun loadInterstitial() {
         if (destroyed || loadingInterstitial || interstitial != null) return
+        val unitId = activity.getString(R.string.ad_unit_interstitial)
+        if (unitId.isBlank()) return
         loadingInterstitial = true
         InterstitialAd.load(
             activity,
-            activity.getString(R.string.ad_unit_interstitial),
+            unitId,
             AdRequest.Builder().build(),
             object : InterstitialAdLoadCallback() {
                 override fun onAdLoaded(ad: InterstitialAd) {
@@ -184,10 +157,12 @@ class AdsManager(
 
     private fun loadRewarded() {
         if (destroyed || loadingRewarded || rewarded != null) return
+        val unitId = activity.getString(R.string.ad_unit_rewarded)
+        if (unitId.isBlank()) return
         loadingRewarded = true
         RewardedAd.load(
             activity,
-            activity.getString(R.string.ad_unit_rewarded),
+            unitId,
             AdRequest.Builder().build(),
             object : RewardedAdLoadCallback() {
                 override fun onAdLoaded(ad: RewardedAd) {
@@ -236,19 +211,9 @@ class AdsManager(
 
     // ---------- Lifecycle ----------
 
-    fun onResume() {
-        banner?.resume()
-    }
-
-    fun onPause() {
-        banner?.pause()
-    }
-
     fun onDestroy() {
         destroyed = true
         handler.removeCallbacksAndMessages(null)
-        banner?.destroy()
-        banner = null
         interstitial = null
         rewarded = null
     }

@@ -9,7 +9,6 @@
 -->
 <resources>
     <string name="admob_app_id" translatable="false">ca-app-pub-3940256099942544~3347511713</string>
-    <string name="ad_unit_banner" translatable="false">ca-app-pub-3940256099942544/9214589741</string>
     <string name="ad_unit_interstitial" translatable="false">ca-app-pub-3940256099942544/1033173712</string>
     <string name="ad_unit_rewarded" translatable="false">ca-app-pub-3940256099942544/5224354917</string>
 </resources>

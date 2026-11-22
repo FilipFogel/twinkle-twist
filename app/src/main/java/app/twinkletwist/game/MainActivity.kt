@@ -9,7 +9,6 @@ import android.view.ViewGroup
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
-import android.widget.FrameLayout
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.SystemBarStyle
@@ -87,7 +86,7 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        ads = AdsManager(this, findViewById<FrameLayout>(R.id.ad_container)) { script ->
+        ads = AdsManager(this) { script ->
             webView.evaluateJavascript(script, null)
         }
         webView.addJavascriptInterface(GameBridge(this, webView, ads), "AndroidBridge")
@@ -108,11 +107,9 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         webView.onResume()
-        ads.onResume()
     }
 
     override fun onPause() {
-        ads.onPause()
         webView.onPause()
         super.onPause()
     }

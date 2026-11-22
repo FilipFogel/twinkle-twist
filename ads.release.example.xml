@@ -2,10 +2,10 @@
 <!--
     TEMPLATE. Copy to app/src/release/res/values/ads.xml and fill in the ids from AdMob.
     The app id contains a ~, the ad unit ids contain a /.
+    Leave an ad unit empty to switch that kind of ad off in the release build.
 -->
 <resources>
     <string name="admob_app_id" translatable="false">ca-app-pub-XXXXXXXXXXXXXXXX~YYYYYYYYYY</string>
-    <string name="ad_unit_banner" translatable="false">ca-app-pub-XXXXXXXXXXXXXXXX/1111111111</string>
     <string name="ad_unit_interstitial" translatable="false">ca-app-pub-XXXXXXXXXXXXXXXX/2222222222</string>
     <string name="ad_unit_rewarded" translatable="false">ca-app-pub-XXXXXXXXXXXXXXXX/3333333333</string>
 </resources>
