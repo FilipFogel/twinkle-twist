@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * All AdMob code in one place.
  *
  *  - Consent (GDPR) is gathered with Google's UMP before any ads are loaded.
- *  - Interstitial: shown between levels when the game asks for it.
+ *  - Interstitial: shown when the game asks for it, between levels or before a daily string.
  *  - Rewarded ad: grants new hints.
  *
  * The game gets results back through [runJs], which runs JavaScript in the WebView.

@@ -15,7 +15,13 @@ The game starts on a 3×3 board and grows to 7×9. New elements appear along the
 | 29 | Twins: two pieces that turn together |
 | 50 | Every fifth level has edges that wrap around |
 
-The level curve lives in `levelSpec()` in `core.js` and is easy to change.
+The first fifteen levels are meant to be easy, so that new players get into the game. The board
+grows slowly from 3×3 to 5×5, part of the string is already in place, and most of the wrong pieces
+are a single tap from the right state. Level 5 can be solved in 9 moves, level 10 in 17 and level
+15 in 31. From level 16 on, almost every piece starts out wrong.
+
+The level curve lives in `levelSpec()` in `core.js` and is easy to change. The first fifteen levels
+are listed one row per level in `FIRST_LEVELS`, just above it.
 
 ## How the project is organized
 
@@ -47,7 +53,7 @@ GitHub Pages serves the `docs/` folder at https://filipfogel.github.io/twinkle-t
 - `/play/` is the game. `/play/?daily` goes straight to today's daily string.
 
 On the web the game has no ads. When a player runs out of hints, the dialog points to the daily
-string, which gives one hint a day, and to the app. The menu has a link to the app on Google Play,
+string, which gives hints (see "The daily string" below), and to the app. The menu has a link to the app on Google Play,
 except on an iPhone or iPad.
 
 To try the web version on your own computer, serve the folder over http and open
@@ -78,6 +84,21 @@ so a language with other letters also needs another font file.
 Add `?lang=sv` to the address to see a language regardless of the settings.
 
 None of the translations has been checked by a native speaker yet.
+
+## The daily string
+
+Every day there is one new puzzle, the same for every player. The first time a player finishes it
+that day, they earn a hint. Finishing it on the day after as well builds a streak.
+
+Every third day in a row (day 3, 6, 9 and so on) the string gives 10 hints instead of 1. The win
+dialog counts down to that day, and on the day itself the menu says what the string is worth.
+
+In the app, the string that gives the 10 hints opens with an interstitial, no matter which level
+the player has reached. If no ad was loaded at that moment, it is shown when the string is done
+instead. If there is still no ad, for example without a network, the player gets the hints anyway.
+The web version gives the same hints without an ad.
+
+`STREAK_DAYS` and `STREAK_HINTS` at the top of `game.js` hold the two numbers.
 
 ## Sharing and rating
 
@@ -143,7 +164,9 @@ them you have to ask Google Play support to reset the upload key.
 
 Ads are shown like this, and can be changed at the top of `game.js`:
 
-- An interstitial every third completed level, starting at level 6 at the earliest and at most one per minute.
+- No ads during the first ten levels. The first interstitial comes after level 10, and then after
+  every fifth completed level. There is at most one per minute.
+- An interstitial when the player opens the daily string that gives 10 hints, see "The daily string".
 - A rewarded ad gives 2 hints when the player has run out.
 - The web version shows no ads.
 

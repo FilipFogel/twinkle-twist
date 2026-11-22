@@ -17,8 +17,10 @@
   // ---------- Settings that are easy to tweak ----------
   var START_HINTS = 3;          // hints at the start
   var HINTS_PER_AD = 2;         // hints per rewarded ad
-  var LEVELS_BETWEEN_ADS = 3;   // interstitial every Nth completed level …
-  var FIRST_AD_LEVEL = 6;       // … but never before this level
+  var LEVELS_BETWEEN_ADS = 5;   // interstitial every Nth completed level …
+  var FIRST_AD_LEVEL = 11;      // … but never before this level, so the first ten levels have no ads
+  var STREAK_DAYS = 3;          // every Nth daily string in a row …
+  var STREAK_HINTS = 10;        // … gives this many hints instead of one, and comes with an ad
   var LONG_PRESS_MS = 420;      // how long to press and hold to pin a piece
   var WEB_URL = 'https://filipfogel.github.io/twinkle-twist/play/'; // the web version; a shared result links here
   // The app's page on Google Play, offered to players of the web version. Play Console shows the
@@ -134,7 +136,8 @@
   function defaults() {
     return { level: 1, stars: 0, best: {}, hints: START_HINTS, sound: true, music: true, haptics: true,
              lang: null, // null = follow the phone or the browser
-             daily: { date: null, streak: 0 }, sinceAd: 0, seenHow: false, seen: {}, cur: {},
+             daily: { date: null, streak: 0, ad: null }, // ad = the day whose streak ad has been shown
+             sinceAd: 0, seenHow: false, seen: {}, cur: {},
              review: { n: 0, at: 0 } }; // how many times a rating was asked for, and when last
   }
   function load() {
@@ -147,7 +150,7 @@
       }
     } catch (e) { /* save is missing or broken – start from scratch */ }
     ['best', 'seen', 'cur'].forEach(function (k) { if (!d[k] || typeof d[k] !== 'object') d[k] = {}; });
-    if (!d.daily || typeof d.daily !== 'object') d.daily = { date: null, streak: 0 };
+    if (!d.daily || typeof d.daily !== 'object') d.daily = { date: null, streak: 0, ad: null };
     if (!d.review || typeof d.review !== 'object') d.review = { n: 0, at: 0 };
     return d;
   }
@@ -277,14 +280,14 @@
       try { started = !!bridge.showRewarded(kind); } catch (e) { started = false; }
       if (!started) { adCb = null; cb(false); }
     },
-    /** Interstitial between levels. cb() runs when the game should continue. */
+    /** Interstitial at a break in the game. cb(shown) runs when the game should continue. */
     interstitial: function (cb) {
-      if (adCb || $('.adsim') || WEB) { cb(); return; }
-      if (!bridge) { simAd(false, function () { cb(); }); return; }
+      if (adCb || $('.adsim') || WEB) { cb(false); return; }
+      if (!bridge) { simAd(false, function () { cb(true); }); return; }
       var started = false;
-      adCb = function () { cb(); };
+      adCb = function () { cb(true); };
       try { started = !!bridge.showInterstitial(); } catch (e) { started = false; }
-      if (!started) { adCb = null; cb(); }
+      if (!started) { adCb = null; cb(false); }
     }
   };
   function simAd(rewarded, cb) {
@@ -326,11 +329,32 @@
     toastTimer = setTimeout(function () { el.classList.remove('show'); }, 2600);
   }
 
+  // ---------- Daily streak ----------
+  /** The streak the player has once the daily string of that day is done. */
+  function streakAfter(key) {
+    return S.daily.date === dayBefore(key) ? (S.daily.streak || 0) + 1 : 1;
+  }
+  /** True if that day's string is still to be done and is one that gives the streak bonus. */
+  function bonusDay(key) {
+    return S.daily.date !== key && streakAfter(key) % STREAK_DAYS === 0;
+  }
+  /** The ad that comes with the streak bonus, one per daily string. It is shown when the player
+      opens the string. If no ad could be shown then, the next call tries again: when the string is
+      opened once more, and at the latest when it is done. then(shown) runs when the game goes on. */
+  function streakAd(key, then) {
+    if (S.daily.ad === key) { then(false); return; }
+    Ads.interstitial(function (shown) {
+      if (shown) { S.daily.ad = key; save(); }
+      then(shown);
+    });
+  }
+
   function renderHome() {
     var d = S.daily, today = todayKey();
     var doneToday = d.date === today;
     var alive = doneToday || d.date === dayBefore(today);
-    var sub = doneToday ? t('dailyDone') : (alive && d.streak > 1 ? t('dailyStreak', { n: d.streak }) : t('dailyNew'));
+    var sub = doneToday ? t('dailyDone') : bonusDay(today) ? t('dailyBonusToday', { n: STREAK_HINTS })
+      : (alive && d.streak > 1 ? t('dailyStreak', { n: d.streak }) : t('dailyNew'));
     $('#home').innerHTML = swag() +
       '<div class="home-body">' +
         '<div><h1 class="wordmark" aria-label="Twinkle Twist">' + wordmark() + '</h1><p class="tagline">' + t('tagline') + '</p></div>' +
@@ -583,7 +607,8 @@
   }
 
   function win() {
-    var p = G.p, stars = starsFor(p, G.taps), firstDaily = false;
+    var p = G.p, stars = starsFor(p, G.taps), game = G, key = G.key;
+    var reward = 0; // hints earned: only the first time a daily string is done
     G.over = true;
     G.stars = stars;
     $('#board').classList.add('won');
@@ -595,14 +620,21 @@
       if (stars > prev) { S.stars += stars - prev; S.best[G.key] = stars; }
       S.level = Math.max(S.level, G.key + 1);
       S.sinceAd++;
-    } else if (S.daily.date !== G.key) {
-      S.daily.streak = S.daily.date === dayBefore(G.key) ? (S.daily.streak || 0) + 1 : 1;
-      S.daily.date = G.key;
-      S.hints++;
-      firstDaily = true;
+    } else if (S.daily.date !== key) {
+      S.daily.streak = streakAfter(key);
+      S.daily.date = key;
+      reward = S.daily.streak % STREAK_DAYS === 0 ? STREAK_HINTS : 1;
+      S.hints += reward;
+      $('#hud-hints').textContent = S.hints;
     }
     persist();
-    setTimeout(function () { openWin(stars, firstDaily); }, 1300);
+    setTimeout(function () {
+      if (G !== game) return; // the player has already left
+      var open = function () { if (G === game) openWin(stars, reward); };
+      // The streak bonus comes with an ad. Normally it was shown when the string was opened.
+      if (reward > 1) streakAd(key, function (shown) { game.adAtWin = shown; open(); });
+      else open();
+    }, 1300);
   }
 
   // ---------- Dialogs ----------
@@ -626,7 +658,7 @@
     return s + '</div>';
   }
 
-  function openWin(stars, firstDaily) {
+  function openWin(stars, reward) {
     if (!G) return;
     var text = t('winTaps', { a: G.taps }) + ' ' + (stars === 3 ? t('winBest') : t('winNeed', { n: limits(G.p).three }));
     if (G.mode === 'level') {
@@ -635,7 +667,11 @@
         (stars < 3 ? '<button class="btn plain" data-act="retry">' + t('retry') + '</button>' : '') +
         '<button class="btn plain" data-act="home">' + t('home') + '</button>', 'home');
     } else {
-      var extra = firstDaily ? t('dailyReward') + (S.daily.streak > 1 ? ' ' + t('dailyStreak', { n: S.daily.streak }) + '.' : '') : t('dailyAgain');
+      var streak = S.daily.streak, left = STREAK_DAYS - streak % STREAK_DAYS; // days until the next streak bonus
+      var extra = !reward ? t('dailyAgain')
+        : reward > 1 ? t('dailyBonus', { a: streak, n: reward })
+        : t('dailyReward') + (streak > 1 ? ' ' + t('dailyStreak', { n: streak }) + '.' : '') + ' ' +
+          (left === 1 ? t('bonusTomorrow', { n: STREAK_HINTS }) : t('bonusIn', { a: left, n: STREAK_HINTS }));
       openModal(starsHTML(stars) + '<h2>' + t('winDaily') + '</h2><p>' + text + ' ' + extra + '</p>' +
         '<button class="btn" data-act="share">' + t('share') + ICON.share + '</button>' +
         '<button class="btn plain" data-act="home">' + t('home') + '</button>', 'home');
@@ -765,6 +801,7 @@
       Play decides on its own whether its dialog really shows, so this only picks the moments. */
   function maybeAskReview() {
     if (!bridge || !bridge.askReview || !G || !G.over) return false;
+    if (G.adAtWin) return false; // the rating dialog and an ad never come in the same break
     var r = S.review, now = Date.now();
     var good = G.mode === 'level' ? (G.key >= REVIEW_LEVEL && G.stars === 3) : S.daily.streak >= REVIEW_STREAK;
     if (!good || r.n >= REVIEW_MAX || now - r.at < REVIEW_GAP_DAYS * 864e5) return false;
@@ -782,7 +819,10 @@
     },
     howGo: function () { var go = afterHow; afterHow = null; S.seenHow = true; save(); if (go) go(); else closeModal(); },
     daily: function () {
-      var go = function () { start('daily', todayKey()); };
+      var key = todayKey();
+      var play = function () { start('daily', key); };
+      // the string that gives the streak bonus opens with an ad
+      var go = function () { if (bonusDay(key)) streakAd(key, play); else play(); };
       if (!S.seenHow) openHowTo(go); else go();
     },
     howto: function () { openHowTo(null); },
