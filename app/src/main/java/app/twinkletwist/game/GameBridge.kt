@@ -1,10 +1,12 @@
 package app.twinkletwist.game
 
 import android.app.Activity
+import android.content.Intent
 import android.os.Build
 import android.view.HapticFeedbackConstants
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
+import com.google.android.play.core.review.ReviewManagerFactory
 
 /**
  * The bridge between the game (JavaScript) and the app. Visible in the game as window.AndroidBridge.
@@ -50,5 +52,37 @@ class GameBridge(
             else -> HapticFeedbackConstants.CLOCK_TICK
         }
         activity.runOnUiThread { webView.performHapticFeedback(constant) }
+    }
+
+    /** Opens the system share sheet with a ready-made text, such as the result of the daily string. */
+    @JavascriptInterface
+    fun share(text: String) {
+        activity.runOnUiThread {
+            val send = Intent(Intent.ACTION_SEND)
+                .setType("text/plain")
+                .putExtra(Intent.EXTRA_TEXT, text)
+            try {
+                activity.startActivity(Intent.createChooser(send, null))
+            } catch (e: Exception) {
+                // no app can receive text
+            }
+        }
+    }
+
+    /**
+     * Asks Google Play to show its rating dialog. Play decides on its own whether the dialog really
+     * appears (there is a quota), and it never tells the app what the player answered. Outside
+     * Google Play, for example in a debug build, nothing happens.
+     */
+    @JavascriptInterface
+    fun askReview() {
+        activity.runOnUiThread {
+            val manager = ReviewManagerFactory.create(activity)
+            manager.requestReviewFlow().addOnCompleteListener { request ->
+                if (request.isSuccessful && !activity.isFinishing && !activity.isDestroyed) {
+                    manager.launchReviewFlow(activity, request.result)
+                }
+            }
+        }
     }
 }

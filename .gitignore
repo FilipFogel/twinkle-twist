@@ -13,3 +13,8 @@ keystore.properties
 # Real ad unit ids do not belong in version control if the repo is public
 app/src/release/res/values/ads.xml
 release/
+
+# Tools written in Node (tools/store-shots)
+node_modules/
+# The store screenshots are made by tools/store-shots/shots.js
+store-assets/shots/

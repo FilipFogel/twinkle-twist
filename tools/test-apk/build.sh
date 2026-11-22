@@ -11,7 +11,7 @@ cp "$ROOT/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml" "$OUT/res/mipmap-a
 cp "$T/MainActivity.java" "$OUT/src/app/twinkletwist/game/test/"
 aapt2 compile --dir "$OUT/res" -o "$OUT/res.zip"
 mkdir -p "$OUT/gen"
-aapt2 link -o "$OUT/base.apk" -I "$JAR" --manifest "$T/AndroidManifest.xml" --java "$OUT/gen" -A "$ROOT/app/src/main/assets" "$OUT/res.zip"
+aapt2 link -o "$OUT/base.apk" -I "$JAR" --manifest "$T/AndroidManifest.xml" --java "$OUT/gen" -A "$ROOT/docs/play" "$OUT/res.zip"
 javac -encoding UTF-8 -Xlint:-options -source 8 -target 8 -bootclasspath "$JAR" -d "$OUT/classes" "$OUT/src/app/twinkletwist/game/test/MainActivity.java" "$OUT/gen/app/twinkletwist/game/test/R.java"
 dalvik-exchange --dex --min-sdk-version=26 --output="$OUT/classes.dex" "$OUT/classes"
 cp "$OUT/base.apk" "$OUT/unsigned.apk"; (cd "$OUT" && zip -q -j unsigned.apk classes.dex)

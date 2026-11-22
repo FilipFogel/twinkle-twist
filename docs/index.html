@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#E6EFFF">
+<title>Twinkle Twist – a string lights puzzle game</title>
+<meta name="description" content="Twinkle Twist is a free puzzle game about a tangled string of lights. Turn the pieces until every lamp is lit. Play in your browser or get the Android app.">
+<link rel="canonical" href="https://filipfogel.github.io/twinkle-twist/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Twinkle Twist">
+<meta property="og:title" content="Twinkle Twist – a string lights puzzle game">
+<meta property="og:description" content="Turn the pieces until the whole string lights up. Free to play in your browser, with a new daily string every day.">
+<meta property="og:url" content="https://filipfogel.github.io/twinkle-twist/">
+<meta property="og:image" content="https://filipfogel.github.io/twinkle-twist/og.png">
+<meta property="og:image:width" content="1024">
+<meta property="og:image:height" content="500">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/png" sizes="192x192" href="play/icon-192.png">
+<link rel="apple-touch-icon" href="play/icon-180.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "VideoGame",
+  "name": "Twinkle Twist",
+  "url": "https://filipfogel.github.io/twinkle-twist/",
+  "image": "https://filipfogel.github.io/twinkle-twist/og.png",
+  "description": "A puzzle game about a tangled string of lights. Turn the pieces until every cable connects back to the power socket and every lamp is lit.",
+  "genre": "Puzzle",
+  "gamePlatform": ["Web browser", "Android"],
+  "operatingSystem": "Android, any modern web browser",
+  "applicationCategory": "GameApplication",
+  "inLanguage": ["en", "sv", "de", "fr", "es", "pt", "id"],
+  "author": { "@type": "Person", "name": "Filip Jönsson" },
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+}
+</script>
+<style>
+  /* Same typeface and colors as the game (play/style.css). */
+  @font-face {
+    font-family: "Bricolage Grotesque";
+    src: url("play/bricolage.woff2") format("woff2");
+    font-weight: 200 800;
+    font-display: swap;
+  }
+  :root {
+    --bg: #E6EFFF; --bg-2: #F3EBFF; --panel: #FFFFFF; --edge: #CED8EE;
+    --tile-lit: #FFEFC2; --wire: #A9B4CF; --glow: #FF8A1F;
+    --primary: #6C4DF4; --gold: #F5A700; --ink: #1F2547; --ink-dim: #5F6A8C;
+    color-scheme: light;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; color: var(--ink);
+    background: var(--bg) linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%) fixed;
+    font: 18px/1.5 "Bricolage Grotesque", "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
+  }
+  a { color: var(--primary); }
+  .lights { display: block; width: 100%; height: 112px; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 20px; }
+
+  /* ---------- Top: name, pitch, the two ways to play ---------- */
+  .hero { display: grid; gap: 40px; align-items: center; padding: 28px 0 56px; }
+  h1 {
+    margin: 0; font-size: clamp(56px, 16vw, 104px); font-weight: 800;
+    letter-spacing: -0.035em; line-height: .88;
+  }
+  h1 span { display: block; }
+  h1 i { font-style: normal; color: var(--c); }
+  .tagline { margin: 18px 0 0; font-size: clamp(21px, 5.4vw, 26px); line-height: 1.25; color: var(--ink-dim); max-width: 17em; text-wrap: balance; }
+  .lead { margin: 16px 0 0; max-width: 30em; text-wrap: pretty; }
+  .cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: space-between; gap: 14px;
+    min-height: 60px; padding: 10px 22px; border-radius: 16px;
+    font-weight: 700; font-size: 20px; text-decoration: none;
+    background: var(--primary); color: #fff; box-shadow: 0 6px 16px -6px rgba(108, 77, 244, .55);
+    transition: transform .08s, filter .08s;
+  }
+  .btn:active { transform: scale(.975); filter: brightness(.93); }
+  .btn:focus-visible, a:focus-visible { outline: 3px solid #2F8CFF; outline-offset: 3px; border-radius: 6px; }
+  .btn:focus-visible { border-radius: 16px; }
+  .btn svg { width: 24px; height: 24px; flex: none; }
+  .btn.quiet { background: var(--panel); color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--edge), 0 6px 16px -10px rgba(31, 37, 71, .35); }
+  .fine { margin: 16px 0 0; color: var(--ink-dim); font-size: 16px; }
+
+  /* The playable phone is added by the script at the bottom, on wide screens only. */
+  .phone { display: none; }
+  .phone iframe { display: block; width: 100%; height: 100%; border: 0; border-radius: 30px; background: var(--bg); }
+
+  /* ---------- Sections ---------- */
+  section { padding: 0 0 56px; }
+  h2 { margin: 0 0 20px; font-size: clamp(30px, 7vw, 40px); font-weight: 800; letter-spacing: -0.02em; line-height: 1.05; }
+  .steps { display: grid; gap: 14px; list-style: none; margin: 0; padding: 0; }
+  .steps li { background: var(--panel); border-radius: 22px; padding: 20px; box-shadow: inset 0 0 0 1.5px var(--edge); }
+  .steps svg { display: block; width: 100%; max-width: 240px; height: auto; margin: 0 0 14px; }
+  h3 { margin: 0 0 4px; font-size: 22px; font-weight: 700; line-height: 1.2; }
+  .steps p, .facts p { margin: 0; color: var(--ink-dim); }
+  .plate { fill: #fff; stroke: var(--edge); stroke-width: 1.5; }
+  .plate.on { fill: var(--tile-lit); stroke: #F3D79A; }
+  .wire { fill: none; stroke: var(--wire); stroke-width: 13; }
+  .wire.on { stroke: var(--glow); }
+  .facts { display: grid; gap: 22px 32px; margin: 0; }
+  .shots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 36px; }
+  .shots img { display: block; width: 100%; height: auto; border-radius: 18px; box-shadow: 0 0 0 1.5px var(--edge), 0 14px 30px -18px rgba(31, 37, 71, .5); }
+  .again { text-align: center; }
+  .again .cta { justify-content: center; margin-top: 0; }
+
+  footer { border-top: 1.5px solid var(--edge); padding: 24px 0 40px; color: var(--ink-dim); font-size: 16px; }
+  footer .wrap { display: flex; flex-wrap: wrap; gap: 8px 24px; }
+  footer span { margin-right: auto; }
+
+  @media (min-width: 700px) {
+    .steps { grid-template-columns: repeat(3, 1fr); }
+    .facts { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (min-width: 920px) {
+    .hero { grid-template-columns: 1fr 372px; gap: 56px; padding-top: 12px; }
+    h1 { font-size: 112px; }
+    .phone {
+      display: block; width: 372px; height: 760px; padding: 10px; border-radius: 40px;
+      background: var(--ink); box-shadow: 0 30px 60px -30px rgba(31, 37, 71, .7);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) { .btn { transition: none; } }
+</style>
+</head>
+<body>
+
+<!-- The string of lights from the game's menu, repeated across the page. -->
+<svg class="lights" aria-hidden="true">
+  <defs>
+    <radialGradient id="a0"><stop offset="0" stop-color="#FF5D5D" stop-opacity=".6"/><stop offset="1" stop-color="#FF5D5D" stop-opacity="0"/></radialGradient>
+    <radialGradient id="a1"><stop offset="0" stop-color="#FFB81F" stop-opacity=".6"/><stop offset="1" stop-color="#FFB81F" stop-opacity="0"/></radialGradient>
+    <radialGradient id="a2"><stop offset="0" stop-color="#22C58B" stop-opacity=".6"/><stop offset="1" stop-color="#22C58B" stop-opacity="0"/></radialGradient>
+    <radialGradient id="a3"><stop offset="0" stop-color="#3B9BFF" stop-opacity=".6"/><stop offset="1" stop-color="#3B9BFF" stop-opacity="0"/></radialGradient>
+    <radialGradient id="a4"><stop offset="0" stop-color="#9B6BFF" stop-opacity=".6"/><stop offset="1" stop-color="#9B6BFF" stop-opacity="0"/></radialGradient>
+    <radialGradient id="a5"><stop offset="0" stop-color="#FF6FB5" stop-opacity=".6"/><stop offset="1" stop-color="#FF6FB5" stop-opacity="0"/></radialGradient>
+    <pattern id="swag" width="400" height="112" patternUnits="userSpaceOnUse">
+      <path d="M0 22Q100 98 200 22Q300 98 400 22" fill="none" stroke="#8792B3" stroke-width="3"/>
+      <circle cx="40" cy="67.3" r="34" fill="url(#a0)"/><rect x="35.5" y="45.3" width="9" height="11" rx="2" fill="#6E7A9C"/><circle cx="40" cy="67.3" r="12" fill="#FF5D5D"/>
+      <circle cx="100" cy="81" r="34" fill="url(#a1)"/><rect x="95.5" y="59" width="9" height="11" rx="2" fill="#6E7A9C"/><circle cx="100" cy="81" r="12" fill="#FFB81F"/>
+      <circle cx="160" cy="67.3" r="34" fill="url(#a2)"/><rect x="155.5" y="45.3" width="9" height="11" rx="2" fill="#6E7A9C"/><circle cx="160" cy="67.3" r="12" fill="#22C58B"/>
+      <circle cx="240" cy="67.3" r="34" fill="url(#a3)"/><rect x="235.5" y="45.3" width="9" height="11" rx="2" fill="#6E7A9C"/><circle cx="240" cy="67.3" r="12" fill="#3B9BFF"/>
+      <circle cx="300" cy="81" r="34" fill="url(#a4)"/><rect x="295.5" y="59" width="9" height="11" rx="2" fill="#6E7A9C"/><circle cx="300" cy="81" r="12" fill="#9B6BFF"/>
+      <circle cx="360" cy="67.3" r="34" fill="url(#a5)"/><rect x="355.5" y="45.3" width="9" height="11" rx="2" fill="#6E7A9C"/><circle cx="360" cy="67.3" r="12" fill="#FF6FB5"/>
+    </pattern>
+  </defs>
+  <rect width="100%" height="112" fill="url(#swag)"/>
+</svg>
+
+<main class="wrap">
+  <div class="hero">
+    <div>
+      <h1 aria-label="Twinkle Twist">
+        <span aria-hidden="true"><i style="--c:#E5484D">T</i><i style="--c:#F08400">w</i><i style="--c:#12A679">i</i><i style="--c:#2F7BFF">n</i><i style="--c:#8B5CF6">k</i><i style="--c:#E64C9C">l</i><i style="--c:#E5484D">e</i></span>
+        <span aria-hidden="true"><i style="--c:#F08400">T</i><i style="--c:#12A679">w</i><i style="--c:#2F7BFF">i</i><i style="--c:#8B5CF6">s</i><i style="--c:#E64C9C">t</i></span>
+      </h1>
+      <p class="tagline">Turn the pieces until the whole string lights up.</p>
+      <p class="lead">A calm puzzle game about a tangled string of lights. Tap a piece to turn it a quarter turn. When every cable leads back to the power socket, every lamp comes on.</p>
+      <div class="cta">
+        <a class="btn" href="play/">Play in your browser
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <!-- The referrer part makes Play Console list these installs under the source "website". -->
+        <a class="btn quiet" href="https://play.google.com/store/apps/details?id=app.twinkletwist&amp;referrer=utm_source%3Dwebsite%26utm_campaign%3Dlanding">Get it on Google Play
+          <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7.5 11l4.5 4.5 4.5-4.5M5 20h14"/></svg></a>
+      </div>
+      <p class="fine">Free, with no account. The browser version has no ads.</p>
+    </div>
+    <div class="phone" id="phone"></div>
+  </div>
+
+  <section>
+    <h2>How it works</h2>
+    <ol class="steps">
+      <li>
+        <svg viewBox="0 0 300 100" aria-hidden="true">
+          <rect class="plate on" x="2.5" y="2.5" width="95" height="95" rx="13"/><path class="wire on" d="M50 50H101"/>
+          <rect x="22" y="22" width="56" height="56" rx="16" fill="#FF8A1F"/><path transform="translate(32.6 32.6) scale(1.45)" d="M13.5 2 5 13.5h5.5L9.5 22 19 10h-6z" fill="#fff"/>
+          <rect class="plate" x="102.5" y="2.5" width="95" height="95" rx="13"/><path class="wire" d="M150 -1V101"/>
+          <rect class="plate" x="202.5" y="2.5" width="95" height="95" rx="13"/><path class="wire" d="M199 50H250"/>
+          <circle cx="250" cy="50" r="22" fill="#E3E8F5" stroke="#A9B4CF" stroke-width="2"/>
+        </svg>
+        <h3>Tap to turn</h3>
+        <p>Each tap turns a piece a quarter turn. Here the string is broken in the middle.</p>
+      </li>
+      <li>
+        <svg viewBox="0 0 300 100" aria-hidden="true">
+          <rect class="plate on" x="2.5" y="2.5" width="95" height="95" rx="13"/><path class="wire on" d="M50 50H101"/>
+          <rect x="22" y="22" width="56" height="56" rx="16" fill="#FF8A1F"/><path transform="translate(32.6 32.6) scale(1.45)" d="M13.5 2 5 13.5h5.5L9.5 22 19 10h-6z" fill="#fff"/>
+          <rect class="plate on" x="102.5" y="2.5" width="95" height="95" rx="13"/><path class="wire on" d="M99 50H201"/>
+          <rect class="plate on" x="202.5" y="2.5" width="95" height="95" rx="13"/><path class="wire on" d="M199 50H250"/>
+          <circle cx="250" cy="50" r="38" fill="#FF5D5D" opacity=".25"/><circle cx="250" cy="50" r="22" fill="#FF5D5D"/><ellipse cx="243" cy="42" rx="6.5" ry="4.5" fill="#fff" opacity=".6" transform="rotate(-30 243 42)"/>
+        </svg>
+        <h3>Light every lamp</h3>
+        <p>Join the cables so power reaches all of them. When every lamp shines, the level is done.</p>
+      </li>
+      <li>
+        <svg viewBox="0 0 300 100" aria-hidden="true" fill="#F5A700">
+          <path transform="translate(14 8) scale(3.5)" d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z"/>
+          <path transform="translate(108 8) scale(3.5)" d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z"/>
+          <path transform="translate(202 8) scale(3.5)" d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z"/>
+        </svg>
+        <h3>Use fewer moves</h3>
+        <p>The fewer taps you need, the more stars you earn. Stuck? A hint puts one piece right.</p>
+      </li>
+    </ol>
+    <div class="shots">
+      <img src="img/game.webp" width="390" height="844" loading="lazy" alt="A level in progress: part of the string is lit in orange, the rest is still grey.">
+      <img src="img/lit.webp" width="390" height="844" loading="lazy" alt="A finished level: every cable is connected and all the colored lamps are lit.">
+      <img src="img/menu.webp" width="390" height="844" loading="lazy" alt="The game's menu with a string of colored lights, the next level and the daily string.">
+    </div>
+  </section>
+
+  <section>
+    <h2>What is in the game</h2>
+    <div class="facts">
+      <div><h3>Levels that keep growing</h3><p>The board starts at 3×3 and grows to 7×9. There is no last level.</p></div>
+      <div><h3>New twists along the way</h3><p>Screwed-down pieces, holes in the board, twins that turn together and edges that wrap around.</p></div>
+      <div><h3>A daily string</h3><p>One new puzzle every day, the same for everyone. Share your result and see who needs fewer moves.</p></div>
+      <div><h3>Seven languages</h3><p>English, Swedish, German, French, Spanish, Portuguese and Indonesian.</p></div>
+      <div><h3>Your progress stays with you</h3><p>Levels, stars and hints are saved on your own device. Nothing is sent anywhere.</p></div>
+      <div><h3>Snow at Christmas</h3><p>From 22 November to 6 January it snows in the game.</p></div>
+    </div>
+  </section>
+
+  <section class="again">
+    <div class="cta">
+      <a class="btn" href="play/?daily">Play today's daily string
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Twinkle Twist is made by Filip Jönsson.</span>
+    <a href="privacy-policy.html">Privacy policy</a>
+    <a href="terms.html">Terms of use</a>
+  </div>
+</footer>
+
+<script>
+  // On a wide screen the game itself sits next to the text, ready to play. Phones get the
+  // "Play in your browser" button instead, so the game is not loaded twice.
+  (function () {
+    var slot = document.getElementById('phone');
+    if (!slot || !window.matchMedia || !window.matchMedia('(min-width: 920px)').matches) return;
+    var frame = document.createElement('iframe');
+    frame.src = 'play/';
+    frame.title = 'Twinkle Twist, ready to play';
+    frame.allow = 'clipboard-write';
+    slot.appendChild(frame);
+  })();
+</script>
+</body>
+</html>

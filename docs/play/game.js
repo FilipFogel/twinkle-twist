@@ -1,11 +1,17 @@
-/* Twinkle Twist – UI: screens, taps, hints, stars, saving, ads and the Christmas theme.
-   Ads are shown by the Android shell via window.AndroidBridge. Without a bridge (e.g. in a
-   regular browser) a simple placeholder is shown so the flow can be tried out. */
+/* Twinkle Twist – UI: screens, taps, hints, stars, saving, sharing, ads and the Christmas theme.
+   The same files run in three places:
+     - in the Android app, where window.AndroidBridge gives ads, vibration, sharing and the rating dialog,
+     - on the web (docs/play is served by GitHub Pages), where there are no ads at all,
+     - opened straight from disk or in the test APK, where a placeholder stands in for each ad so
+       the ad flow can be tried out. */
 (function () {
   'use strict';
 
   var C = window.TTCore;
+  var L = window.TTLang;
   var bridge = window.AndroidBridge || null;
+  var WEB = !bridge && /^https?:$/.test(location.protocol) && location.hostname !== 'appassets.androidplatform.net';
+  var IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   var SAVE_KEY = 'twinkletwist.v1';
 
   // ---------- Settings that are easy to tweak ----------
@@ -14,6 +20,14 @@
   var LEVELS_BETWEEN_ADS = 3;   // interstitial every Nth completed level …
   var FIRST_AD_LEVEL = 6;       // … but never before this level
   var LONG_PRESS_MS = 420;      // how long to press and hold to pin a piece
+  var WEB_URL = 'https://filipfogel.github.io/twinkle-twist/play/'; // the web version; a shared result links here
+  // The app's page on Google Play, offered to players of the web version. Play Console shows the
+  // installs under the source "webgame". Set to '' to hide every link to Google Play.
+  var STORE_URL = 'https://play.google.com/store/apps/details?id=app.twinkletwist&referrer=utm_source%3Dwebgame%26utm_campaign%3Dingame';
+  var REVIEW_LEVEL = 10;        // Google Play may ask for a rating after a three-star win from this level on …
+  var REVIEW_STREAK = 3;        // … or when the daily streak has reached this many days,
+  var REVIEW_MAX = 3;           // at most this many times …
+  var REVIEW_GAP_DAYS = 21;     // … with at least this many days in between
   var XMAS_FROM = [11, 22];     // the Christmas theme (snow and music) runs from this month and day …
   var XMAS_TO = [1, 6];         // … through this one, every year
   var MUSIC_SRC = 'jingle-bells.mp3';
@@ -24,46 +38,29 @@
   var LETTER = ['#E5484D', '#F08400', '#12A679', '#2F7BFF', '#8B5CF6', '#E64C9C']; // wordmark letters, darker for legibility
 
   // ---------- Text ----------
-  var STR = {
-    tagline: 'Turn the pieces until the whole string lights up.',
-    play: 'Play level {n}', daily: 'Daily string', dailyNew: 'A new string every day',
-    dailyStreak: '{n} days in a row', dailyDone: 'Done for today', howto: 'How to play',
-    settings: 'Settings', stars: '{n} stars', level: 'Level {n}', wrapTag: 'wraps around',
-    atMost: 'at most {n}', taps: 'Moves', lampsLit: '{a} of {b} lamps lit',
-    tip1: 'Tap a piece to turn it a quarter turn.',
-    tip2: 'Power comes from the yellow square. Every lamp should light up.',
-    tip3: 'Press and hold a piece to pin it once you know it is right.',
-    introLocked: 'Pieces with screws are fixed. They already face the right way.',
-    introHoles: 'Some squares are missing here. Lead the string around the gaps.',
-    introLinks: 'Pieces with the same symbol are linked. Turn one and the other turns too.',
-    introWrap: 'The edges are joined. A cable leaving on the right comes back in on the left.',
-    fixedMsg: 'That piece is fixed.', pinnedMsg: 'You pinned that piece. Press and hold to release it.',
-    pinOn: 'The piece is pinned.', pinOff: 'The piece is free again.',
-    hintDone: 'The highlighted piece is right now and locked.',
-    winLevel: 'Level {n} done', winDaily: 'The daily string is lit',
-    winTaps: 'You used {a} moves.', winBest: 'That earned three stars.', winNeed: 'Three stars need at most {n}.',
-    dailyReward: 'You earned 1 hint.', dailyAgain: 'A new string is waiting tomorrow.',
-    next: 'Next level', retry: 'Try again', home: 'Back to menu',
-    restartTitle: 'Start the level over?', restartText: 'The pieces turn back and your moves reset.',
-    restart: 'Start over', keepPlaying: 'Keep playing',
-    noHintsTitle: 'Out of hints', noHintsText: 'Watch a short ad to get {n} more.',
-    watchAd: 'Watch ad', notNow: 'Not now', gotHints: 'You got {n} hints',
-    adUnavailable: 'No ad is available right now. Try again in a moment.',
-    setSound: 'Sound', setMusic: 'Music', setHaptics: 'Vibration',
-    setPrivacy: 'Ad choices and privacy', setReset: 'Reset progress',
-    setResetSure: 'Tap again to reset everything', resetDone: 'Progress has been reset',
-    close: 'Close', letsGo: "Let's go",
-    how1: 'Tap a piece to turn it a quarter turn.', how1b: 'Here the string is broken.',
-    how2: 'Join the cables so power reaches every lamp.', how2b: 'When all of them shine, the level is done.',
-    how3: 'Fewer moves earn more stars.', how3b: 'Press and hold a piece to pin it.',
-    adSim: 'An ad is shown here in the app', adSimNote: 'Preview without real ads.',
-    adSimWait: 'Wait {n} …', back: 'Back', hint: 'Hint',
-    ariaLamp: 'Lamp', ariaSrc: 'Power socket', ariaCable: 'Cable', ariaOn: 'has power', ariaOff: 'has no power',
-    ariaFixed: 'fixed'
-  };
+  // The texts live in lang.js. The language follows the phone or the browser until the player
+  // picks one in Settings. index.html?lang=sv forces a language, handy for previews and screenshots.
+  var STR = L.text.en, LANG = 'en';
+  var langForced = /[?&]lang=([a-z]{2})\b/.exec(location.search);
+
+  function autoLang() {
+    var list = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || 'en'];
+    for (var i = 0; i < list.length; i++) {
+      var code = String(list[i]).toLowerCase().split('-')[0];
+      if (code === 'in') code = 'id'; // the old code for Indonesian
+      if (L.text[code]) return code;
+    }
+    return 'en';
+  }
+  function setLang(code) {
+    LANG = L.text[code] ? code : autoLang();
+    STR = L.text[LANG];
+    document.documentElement.lang = LANG;
+  }
 
   function t(key, vars) {
     var s = STR[key];
+    if (s == null) s = L.text.en[key]; // not translated yet
     if (vars) for (var k in vars) s = s.replace('{' + k + '}', vars[k]);
     return s;
   }
@@ -76,6 +73,10 @@
     bulb: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.6 10.8c.6.5 1.1 1.3 1.1 2.2h5c0-.9.5-1.7 1.1-2.2A6 6 0 0 0 12 3z"/></svg>',
     redo: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.6-5.9"/><path d="M4 4v5h5"/></svg>',
     note: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><g class="note"><path d="M9.5 17.5V6l10-2.2v11.7"/><circle cx="7" cy="17.5" r="2.5"/><circle cx="17" cy="15.5" r="2.5"/></g><path class="slash" d="M4 3.5l16.5 17"/></svg>',
+    share: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5.5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="18.5" r="2.6"/><path d="M8.3 10.8l7.4-4M8.3 13.2l7.4 4"/></svg>',
+    globe: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.8 2.6 4.2 5.6 4.2 9s-1.4 6.4-4.2 9c-2.8-2.6-4.2-5.6-4.2-9S9.2 5.6 12 3z"/></svg>',
+    check: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+    get: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7.5 11l4.5 4.5 4.5-4.5M5 20h14"/></svg>',
     star: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z"/></svg>',
     bolt: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 2 5 13.5h5.5L9.5 22 19 10h-6z" fill="currentColor"/></svg>'
   };
@@ -132,7 +133,9 @@
   // ---------- Saved state ----------
   function defaults() {
     return { level: 1, stars: 0, best: {}, hints: START_HINTS, sound: true, music: true, haptics: true,
-             daily: { date: null, streak: 0 }, sinceAd: 0, seenHow: false, seen: {}, cur: {} };
+             lang: null, // null = follow the phone or the browser
+             daily: { date: null, streak: 0 }, sinceAd: 0, seenHow: false, seen: {}, cur: {},
+             review: { n: 0, at: 0 } }; // how many times a rating was asked for, and when last
   }
   function load() {
     var d = defaults();
@@ -145,11 +148,13 @@
     } catch (e) { /* save is missing or broken – start from scratch */ }
     ['best', 'seen', 'cur'].forEach(function (k) { if (!d[k] || typeof d[k] !== 'object') d[k] = {}; });
     if (!d.daily || typeof d.daily !== 'object') d.daily = { date: null, streak: 0 };
+    if (!d.review || typeof d.review !== 'object') d.review = { n: 0, at: 0 };
     return d;
   }
   function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) { /* full or disabled */ } }
 
   var S = load();
+  setLang(langForced ? langForced[1] : S.lang);
   var G = null;      // game in progress
   var cells = [];    // the square elements, one per square
 
@@ -259,11 +264,13 @@
   }
 
   // ---------- Ads ----------
+  // The web version has none: no interstitials, and hints come from the daily string instead.
   var adCb = null;
   var Ads = {
     /** Rewarded ad. cb(true) if the player watched to the end and should get the reward. */
     rewarded: function (kind, cb) {
       if (adCb || $('.adsim')) return; // one ad at a time
+      if (WEB) { cb(false); return; }
       if (!bridge) { simAd(true, cb); return; }
       var started = false;
       adCb = cb;
@@ -272,7 +279,7 @@
     },
     /** Interstitial between levels. cb() runs when the game should continue. */
     interstitial: function (cb) {
-      if (adCb || $('.adsim')) { cb(); return; }
+      if (adCb || $('.adsim') || WEB) { cb(); return; }
       if (!bridge) { simAd(false, function () { cb(); }); return; }
       var started = false;
       adCb = function () { cb(); };
@@ -330,6 +337,7 @@
         '<div class="menu">' +
           '<button class="btn" data-act="play">' + t('play', { n: S.level }) + ICON.go + '</button>' +
           '<button class="btn quiet" data-act="daily"><span>' + t('daily') + '<small>' + sub + '</small></span>' + ICON.go + '</button>' +
+          (storeLink() ? '<a class="store" href="' + STORE_URL + '" target="_blank" rel="noopener">' + ICON.get + t('getApp') + '</a>' : '') +
         '</div>' +
         '<div class="home-foot">' +
           '<button class="btn plain" data-act="howto">' + t('howto') + '</button>' +
@@ -340,6 +348,9 @@
     show('home');
     snow('home');
   }
+
+  /** True where the game should point to the app on Google Play: on the web, but not on an iPhone or iPad. */
+  function storeLink() { return WEB && !!STORE_URL && !IOS; }
 
   function goHome() {
     G = null;
@@ -574,6 +585,7 @@
   function win() {
     var p = G.p, stars = starsFor(p, G.taps), firstDaily = false;
     G.over = true;
+    G.stars = stars;
     $('#board').classList.add('won');
     setMsg('', '');
     sfx('win');
@@ -625,12 +637,23 @@
     } else {
       var extra = firstDaily ? t('dailyReward') + (S.daily.streak > 1 ? ' ' + t('dailyStreak', { n: S.daily.streak }) + '.' : '') : t('dailyAgain');
       openModal(starsHTML(stars) + '<h2>' + t('winDaily') + '</h2><p>' + text + ' ' + extra + '</p>' +
-        '<button class="btn" data-act="home">' + t('home') + ICON.go + '</button>', 'home');
+        '<button class="btn" data-act="share">' + t('share') + ICON.share + '</button>' +
+        '<button class="btn plain" data-act="home">' + t('home') + '</button>', 'home');
     }
     snowBehindDialog();
   }
 
   function openNoHints() {
+    if (WEB) {
+      // No ads on the web. Every daily string gives a hint, and the app has rewarded ads for more.
+      var left = S.daily.date !== todayKey();
+      openModal('<h2>' + t('noHintsTitle') + '</h2><p>' + t(left ? 'noHintsDaily' : 'noHintsTomorrow') +
+        (storeLink() ? ' ' + t('noHintsApp') : '') + '</p>' +
+        (left && G && G.mode !== 'daily' ? '<button class="btn" data-act="daily">' + t('daily') + ICON.go + '</button>' : '') +
+        (storeLink() ? '<a class="btn quiet" href="' + STORE_URL + '" target="_blank" rel="noopener">' + t('getApp') + ICON.get + '</a>' : '') +
+        '<button class="btn plain" data-act="close">' + t('notNow') + '</button>');
+      return;
+    }
     openModal('<h2>' + t('noHintsTitle') + '</h2><p>' + t('noHintsText', { n: HINTS_PER_AD }) + '</p>' +
       '<button class="btn" data-act="adHints">' + t('watchAd') + ICON.go + '</button>' +
       '<button class="btn plain" data-act="close">' + t('notNow') + '</button>');
@@ -676,12 +699,80 @@
       sw('setSound', t('setSound'), S.sound) +
       (isXmas() ? sw('setMusic', t('setMusic'), S.music) : '') +
       sw('setHaptics', t('setHaptics'), S.haptics) +
+      '<button class="row" data-act="lang"><span>' + ICON.globe + t('setLang') + '</span><span class="row-val">' + L.names[LANG] + '</span></button>' +
       (privacy ? '<button class="row" data-act="privacy"><span>' + t('setPrivacy') + '</span></button>' : '') +
       '<button class="row danger" data-act="reset"><span id="reset-label">' + t('setReset') + '</span></button>' +
       '<button class="btn quiet" data-act="close">' + t('close') + '</button>');
   }
 
+  function openLang() {
+    var html = '<h2>' + t('setLang') + '</h2>';
+    L.order.forEach(function (code) {
+      var cur = code === LANG;
+      html += '<button class="row" data-act="pickLang" data-lang="' + code + '" lang="' + code + '"' + (cur ? ' aria-current="true"' : '') + '>' +
+        '<span>' + L.names[code] + '</span>' + (cur ? ICON.check : '') + '</button>';
+    });
+    openModal(html + '<button class="btn quiet" data-act="settings">' + t('back') + '</button>');
+  }
+
   function flip(el, on) { el.setAttribute('aria-checked', on ? 'true' : 'false'); }
+
+  // ---------- Sharing ----------
+  /** The result of the daily string as a short text to send to someone, with a link to today's string. */
+  function shareText() {
+    var date = G.key, stars = '', i;
+    try { date = new Date(G.key + 'T12:00:00').toLocaleDateString(LANG, { day: 'numeric', month: 'short' }); } catch (e) { /* keep the plain date */ }
+    for (i = 0; i < G.stars; i++) stars += '\u2B50';
+    var lines = [t('shareTitle', { date: date }), t('shareScore', { stars: stars, n: G.taps })];
+    if (S.daily.streak > 1) lines.push('\uD83D\uDD25 ' + t('dailyStreak', { n: S.daily.streak }));
+    lines.push(t('shareAsk'), WEB_URL + '?daily');
+    return lines.join('\n');
+  }
+
+  function copyText(text) {
+    function done() { toast(t('shareCopied')); }
+    function byHand() {
+      var el = document.createElement('textarea'), ok = false;
+      el.value = text;
+      el.setAttribute('readonly', '');
+      el.style.cssText = 'position:fixed;left:0;top:0;opacity:0;-webkit-user-select:text;user-select:text';
+      document.body.appendChild(el);
+      el.select();
+      try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+      el.remove();
+      if (ok) done();
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, byHand);
+    else byHand();
+  }
+
+  /** The app opens Android's share sheet. A phone browser opens its own. Otherwise the text is copied. */
+  function share() {
+    if (!G || !G.over) return;
+    var text = shareText();
+    if (bridge && bridge.share) {
+      try { bridge.share(text); return; } catch (e) { /* fall through to copying */ }
+    }
+    if (navigator.share && window.matchMedia && window.matchMedia('(pointer: coarse)').matches) {
+      navigator.share({ text: text }).catch(function (e) { if (!e || e.name !== 'AbortError') copyText(text); });
+      return;
+    }
+    copyText(text);
+  }
+
+  // ---------- Rating ----------
+  /** After a good moment, lets Google Play ask for a rating. Returns true if it was asked for now.
+      Play decides on its own whether its dialog really shows, so this only picks the moments. */
+  function maybeAskReview() {
+    if (!bridge || !bridge.askReview || !G || !G.over) return false;
+    var r = S.review, now = Date.now();
+    var good = G.mode === 'level' ? (G.key >= REVIEW_LEVEL && G.stars === 3) : S.daily.streak >= REVIEW_STREAK;
+    if (!good || r.n >= REVIEW_MAX || now - r.at < REVIEW_GAP_DAYS * 864e5) return false;
+    S.review = { n: r.n + 1, at: now };
+    save();
+    try { bridge.askReview(); } catch (e) { return false; }
+    return true;
+  }
 
   // ---------- Buttons ----------
   var ACT = {
@@ -698,7 +789,17 @@
     settings: openSettings,
     close: closeModal,
     back: goHome,
-    home: goHome,
+    home: function () { maybeAskReview(); goHome(); },
+    share: share,
+    lang: openLang,
+    pickLang: function (el) {
+      S.lang = el.getAttribute('data-lang');
+      save();
+      setLang(S.lang);
+      // redraw the screen behind the dialog in the new language
+      if (G && !G.over && !$('#game').hidden) start(G.mode, G.key); else renderHome();
+      openSettings();
+    },
     hint: useHint,
     askRestart: openRestart,
     restart: function () { if (G) start(G.mode, G.key, true); },
@@ -706,8 +807,9 @@
     next: function () {
       var key = G ? G.key + 1 : S.level;
       var go = function () { start('level', key); };
+      var asked = maybeAskReview(); // the rating dialog and an ad never come in the same break
       closeModal();
-      if (key >= FIRST_AD_LEVEL && S.sinceAd >= LEVELS_BETWEEN_ADS) {
+      if (!asked && key >= FIRST_AD_LEVEL && S.sinceAd >= LEVELS_BETWEEN_ADS) {
         S.sinceAd = 0; save();
         Ads.interstitial(go);
       } else go();
@@ -731,7 +833,7 @@
     privacy: function () { try { bridge.showPrivacyOptions(); } catch (e) { /* not available */ } },
     reset: function () {
       if (!resetArmed) { resetArmed = true; $('#reset-label').textContent = t('setResetSure'); return; }
-      var keep = { sound: S.sound, music: S.music, haptics: S.haptics, seenHow: S.seenHow };
+      var keep = { sound: S.sound, music: S.music, haptics: S.haptics, seenHow: S.seenHow, lang: S.lang, review: S.review };
       S = defaults();
       for (var k in keep) S[k] = keep[k];
       save();
@@ -754,7 +856,7 @@
   function goBack() {
     if ($('.adsim')) return true;
     if ($('.backdrop')) {
-      if (modalBack === 'home') goHome(); else closeModal();
+      if (modalBack === 'home') ACT.home(); else closeModal();
       return true;
     }
     if (!$('#game').hidden) { goHome(); return true; }
@@ -763,4 +865,10 @@
 
   renderHome();
   musicSync();
+
+  // A shared result links to .../play/?daily, which goes straight to today's string.
+  if (/[?&]daily\b/.test(location.search)) {
+    ACT.daily();
+    try { history.replaceState(null, '', location.pathname); } catch (e) { /* the address just keeps ?daily */ }
+  }
 })();

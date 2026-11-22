@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#E6EFFF">
+<title>Twinkle Twist – play the string lights puzzle</title>
+<!-- The lines down to the stylesheet only matter on the web. The app ignores them. -->
+<meta name="description" content="Turn the pieces until the whole string of lights is lit. A free puzzle game with a new daily string every day. Play it right here in your browser.">
+<link rel="canonical" href="https://filipfogel.github.io/twinkle-twist/play/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Twinkle Twist">
+<meta property="og:title" content="Twinkle Twist – the string lights puzzle">
+<meta property="og:description" content="Turn the pieces until the whole string lights up. Can you beat today's daily string?">
+<meta property="og:url" content="https://filipfogel.github.io/twinkle-twist/play/">
+<meta property="og:image" content="https://filipfogel.github.io/twinkle-twist/og.png">
+<meta property="og:image:width" content="1024">
+<meta property="og:image:height" content="500">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Twinkle Twist">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="snow" class="snow" aria-hidden="true" hidden></div>
+<div id="app">
+  <section id="home" class="screen" aria-label="Menu"></section>
+  <section id="game" class="screen" aria-label="Game" hidden></section>
+</div>
+<div id="modal-root"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<noscript><p style="padding:24px">Twinkle Twist needs JavaScript to run.</p></noscript>
+<script src="core.js"></script>
+<script src="lang.js"></script>
+<script src="game.js"></script>
+</body>
+</html>

@@ -23,8 +23,16 @@ android {
         minSdk = 26
         targetSdk = 36
         // Raise versionCode by 1 for every upload to Play Console.
-        versionCode = 3
-        versionName = "1.0.0"
+        versionCode = 4
+        versionName = "1.1.0"
+    }
+
+    // The game's files live in docs/play. GitHub Pages serves the same folder as the web version,
+    // so the app and the web game can never drift apart.
+    sourceSets {
+        getByName("main") {
+            assets.setSrcDirs(listOf(rootProject.file("docs/play")))
+        }
     }
 
     signingConfigs {
@@ -65,4 +73,5 @@ dependencies {
     implementation(libs.androidx.webkit)
     implementation(libs.play.services.ads)
     implementation(libs.user.messaging.platform)
+    implementation(libs.play.review)
 }

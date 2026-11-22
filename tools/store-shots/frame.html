@@ -1,0 +1,85 @@
+<!doctype html>
+<!-- One store screenshot: a caption above a phone that runs the real game. shots.js opens this page
+     with ?caption=…&theme=plain|xmas&game=<address of the game> and takes a picture of it. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Store screenshot</title>
+<style>
+  @font-face {
+    font-family: "Bricolage Grotesque";
+    src: url("../../docs/play/bricolage.woff2") format("woff2");
+    font-weight: 200 800;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; overflow: hidden; }
+  body {
+    font-family: "Bricolage Grotesque", sans-serif; color: #fff;
+    background: linear-gradient(180deg, #7B5CFA 0%, #5637DB 100%);
+  }
+  body.xmas { background: linear-gradient(180deg, #D0384A 0%, #9F1D32 100%); }
+  .lights { position: absolute; left: 0; top: 0; width: 100%; height: 78px; }
+  h1 {
+    position: absolute; left: 28px; right: 28px; top: 62px; height: 132px; margin: 0;
+    display: grid; place-items: center; text-align: center; text-wrap: balance;
+    font-size: 41px; font-weight: 800; line-height: 1.06; letter-spacing: -0.02em;
+  }
+  h1.long { font-size: 35px; }
+  .phone {
+    position: absolute; left: 80px; top: 206px; width: 380px; height: 734px; padding: 10px;
+    border-radius: 42px; background: #1F2547; box-shadow: 0 24px 50px -18px rgba(20, 10, 60, .65);
+  }
+  iframe { display: block; width: 360px; height: 714px; border: 0; border-radius: 32px; background: #E6EFFF; }
+  /* a few still snowflakes around the caption in the Christmas set */
+  .flake { position: absolute; width: var(--s); height: var(--s); opacity: var(--o); display: none; }
+  body.xmas .flake { display: block; }
+</style>
+</head>
+<body>
+<svg class="lights" aria-hidden="true" viewBox="0 0 540 78" preserveAspectRatio="xMidYMin slice">
+  <defs>
+    <radialGradient id="a0"><stop offset="0" stop-color="#FF5D5D" stop-opacity=".75"/><stop offset="1" stop-color="#FF5D5D" stop-opacity="0"/></radialGradient>
+    <radialGradient id="a1"><stop offset="0" stop-color="#FFB81F" stop-opacity=".75"/><stop offset="1" stop-color="#FFB81F" stop-opacity="0"/></radialGradient>
+    <radialGradient id="a2"><stop offset="0" stop-color="#22C58B" stop-opacity=".75"/><stop offset="1" stop-color="#22C58B" stop-opacity="0"/></radialGradient>
+    <radialGradient id="a3"><stop offset="0" stop-color="#3B9BFF" stop-opacity=".75"/><stop offset="1" stop-color="#3B9BFF" stop-opacity="0"/></radialGradient>
+    <radialGradient id="a4"><stop offset="0" stop-color="#FFE45C" stop-opacity=".75"/><stop offset="1" stop-color="#FFE45C" stop-opacity="0"/></radialGradient>
+    <radialGradient id="a5"><stop offset="0" stop-color="#FF8FC7" stop-opacity=".75"/><stop offset="1" stop-color="#FF8FC7" stop-opacity="0"/></radialGradient>
+  </defs>
+  <path d="M-10 6Q125 76 270 14Q415 76 550 6" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="2.5"/>
+  <g id="lamps"></g>
+</svg>
+<h1 id="caption"></h1>
+<div class="phone"><iframe id="game" title="The game"></iframe></div>
+<script>
+  (function () {
+    var q = new URLSearchParams(location.search);
+    var caption = q.get('caption') || '';
+    document.body.className = q.get('theme') === 'xmas' ? 'xmas' : '';
+    var h1 = document.getElementById('caption');
+    h1.textContent = caption;
+    if (caption.length > 30) h1.className = 'long';
+
+    // lamps along the cable: [x, y] of the socket, lamp hangs 15 below
+    var pts = [[38, 26], [118, 40], [200, 33], [340, 33], [422, 40], [502, 26]];
+    var colors = ['#FF5D5D', '#FFB81F', '#22C58B', '#3B9BFF', '#FFE45C', '#FF8FC7'], s = '';
+    pts.forEach(function (p, k) {
+      s += '<circle cx="' + p[0] + '" cy="' + (p[1] + 15) + '" r="26" fill="url(#a' + k + ')"/>' +
+        '<rect x="' + (p[0] - 3.5) + '" y="' + (p[1] - 1) + '" width="7" height="9" rx="1.5" fill="rgba(255,255,255,.7)"/>' +
+        '<circle cx="' + p[0] + '" cy="' + (p[1] + 15) + '" r="9" fill="' + colors[k] + '"/>';
+    });
+    document.getElementById('lamps').innerHTML = s;
+
+    var flake = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='M16 16L16 3M12.3 4.7L16 7L19.7 4.7M13.4 9.4L16 11L18.6 9.4M16 16L27.3 9.5M23.9 7.1L23.8 11.5L27.6 13.6M20.4 10.4L20.3 13.5L23 15M16 16L27.3 22.5M27.6 18.4L23.8 20.5L23.9 24.9M23 17L20.3 18.5L20.4 21.6M16 16L16 29M19.7 27.3L16 25L12.3 27.3M18.6 22.6L16 21L13.4 22.6M16 16L4.7 22.5M8.1 24.9L8.2 20.5L4.4 18.4M11.6 21.6L11.7 18.5L9 17M16 16L4.7 9.5M4.4 13.6L8.2 11.5L8.1 7.1M9 15L11.7 13.5L11.6 10.4'/></svg>";
+    [[14, 96, 26, .5], [498, 84, 22, .45], [30, 300, 30, .35], [486, 420, 34, .4], [18, 610, 24, .4], [500, 720, 28, .35], [40, 880, 22, .4], [476, 900, 20, .45]].forEach(function (f) {
+      var el = document.createElement('div');
+      el.className = 'flake';
+      el.style.cssText = 'left:' + f[0] + 'px;top:' + f[1] + 'px;--s:' + f[2] + 'px;--o:' + f[3];
+      el.innerHTML = flake;
+      document.body.appendChild(el);
+    });
+
+    document.getElementById('game').src = q.get('game');
+  })();
+</script>
+</body>
+</html>
