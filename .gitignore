@@ -18,3 +18,5 @@ release/
 node_modules/
 # The store screenshots are made by tools/store-shots/shots.js
 store-assets/shots/
+# The ad videos are made by tools/store-shots/video.js
+store-assets/video/

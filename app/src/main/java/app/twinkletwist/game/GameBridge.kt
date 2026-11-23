@@ -26,7 +26,7 @@ class GameBridge(
         return true
     }
 
-    /** Shows an interstitial between levels. Returns false if now is not a good time for one. */
+    /** Shows an interstitial at a break in the game. Returns false if now is not a good time for one. */
     @JavascriptInterface
     fun showInterstitial(): Boolean {
         if (!ads.canShowInterstitial()) return false

@@ -180,12 +180,15 @@
     }
 
     // Scramble: turn the pieces randomly. Screwed-down pieces are left alone.
-    var scramble = spec.scramble || 0.88;
+    // A gentle piece is one tap from the right state. spec.gentle is the share of such pieces, from 0 to 1.
+    var scramble = spec.scramble || 0.88, gentle = spec.gentle || 0;
     p.start = new Array(N).fill(0);
     for (i = 0; i < N; i++) {
       if (p.hole[i] || p.locked[i] || p.link[i] >= 0) continue;
       var per = period(p.mask[i]);
-      if (per > 1 && rnd() < scramble) p.start[i] = spec.gentle ? per - 1 : 1 + Math.floor(rnd() * (per - 1));
+      if (per > 1 && rnd() < scramble) {
+        p.start[i] = (gentle >= 1 || (gentle > 0 && rnd() < gentle)) ? per - 1 : 1 + Math.floor(rnd() * (per - 1));
+      }
     }
     for (g = 0; g < p.groups.length; g++) {
       var turn = 1 + Math.floor(rnd() * 3);
@@ -211,16 +214,34 @@
     return null;
   }
 
+  /** The first levels, one row each. They are meant to be easy, so that new players get into the
+      game: the board grows slowly, part of the string is already in place and few taps are needed.
+        scramble = the share of the pieces that start out wrong (0.88 from level 16 on)
+        gentle   = the share of the wrong pieces that are just one tap from the right state (0 from level 16 on)
+      Both are chances per piece, so the outcome also depends on the level's random draw. The
+      comment on each row is what the level ends up with: wrong pieces / fewest taps. */
+  var FIRST_LEVELS = [
+    { w: 3, h: 3, scramble: 0.4, gentle: 1 },    //  1:  4 / 4
+    { w: 3, h: 3, scramble: 0.55, gentle: 1 },   //  2:  5 / 5
+    { w: 3, h: 3, scramble: 0.7, gentle: 1 },    //  3:  5 / 5
+    { w: 3, h: 4, scramble: 0.45, gentle: 1 },   //  4:  8 / 8
+    { w: 3, h: 4, scramble: 0.55, gentle: 1 },   //  5:  9 / 9
+    { w: 3, h: 4, scramble: 0.55, gentle: 0.8 }, //  6:  9 / 11
+    { w: 4, h: 4, scramble: 0.5, gentle: 1 },    //  7: 10 / 10
+    { w: 4, h: 4, scramble: 0.55, gentle: 0.8 }, //  8: 11 / 12
+    { w: 4, h: 4, scramble: 0.65, gentle: 0.6 }, //  9: 12 / 14
+    { w: 4, h: 4, scramble: 0.75, gentle: 0.6 }, // 10: 13 / 17
+    { w: 4, h: 5, scramble: 0.6, gentle: 0.6 },  // 11: 15 / 19
+    { w: 4, h: 5, scramble: 0.65, gentle: 0.6 }, // 12: 14 / 21
+    { w: 4, h: 5, scramble: 0.75, gentle: 0.45 },// 13: 16 / 22
+    { w: 5, h: 5, scramble: 0.7, gentle: 0.5 },  // 14: 17 / 26
+    { w: 5, h: 5, scramble: 0.8, gentle: 0.3 }   // 15: 21 / 31
+  ];
+
   /** Level curve: the board grows, then come screws, holes, twins and finally wrapping edges. */
   function levelSpec(level) {
     var s;
-    // gentle = every wrongly turned piece is just one tap from the right state
-    if (level === 1) s = { w: 3, h: 3, scramble: 0.4, gentle: true };
-    else if (level === 2) s = { w: 3, h: 3, scramble: 0.7, gentle: true };
-    else if (level <= 4) s = { w: 3, h: 4, scramble: 0.7 };
-    else if (level <= 7) s = { w: 4, h: 4 };
-    else if (level <= 11) s = { w: 4, h: 5 };
-    else if (level <= 15) s = { w: 5, h: 5 };
+    if (level <= FIRST_LEVELS.length) s = FIRST_LEVELS[Math.max(1, level) - 1];
     else if (level <= 20) s = { w: 5, h: 6, locked: level <= 17 ? 4 : 2 };
     else if (level <= 28) s = { w: 5, h: 7, locked: 2, holes: level % 2 ? 0 : 2 };
     else if (level <= 40) s = { w: 6, h: 7, locked: 2, links: level < 35 ? 1 : 2, holes: level % 3 === 0 ? 2 : 0 };

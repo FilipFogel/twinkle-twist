@@ -15,7 +15,13 @@ The game starts on a 3×3 board and grows to 7×9. New elements appear along the
 | 29 | Twins: two pieces that turn together |
 | 50 | Every fifth level has edges that wrap around |
 
-The level curve lives in `levelSpec()` in `core.js` and is easy to change.
+The first fifteen levels are meant to be easy, so that new players get into the game. The board
+grows slowly from 3×3 to 5×5, part of the string is already in place, and most of the wrong pieces
+are a single tap from the right state. Level 5 can be solved in 9 moves, level 10 in 17 and level
+15 in 31. From level 16 on, almost every piece starts out wrong.
+
+The level curve lives in `levelSpec()` in `core.js` and is easy to change. The first fifteen levels
+are listed one row per level in `FIRST_LEVELS`, just above it.
 
 ## How the project is organized
 
@@ -28,7 +34,7 @@ The level curve lives in `levelSpec()` in `core.js` and is easy to change.
 | Ads | `AdsManager.kt` | All AdMob code: consent, interstitial, rewarded ad. |
 | Ad unit ids | `app/src/main/res/values/ads.xml` | Google's test ids. Real ids go in the release build, see below. |
 | Store page | `store-assets/` | Icon, feature graphic, the texts for Google Play in every language and links that show where installs come from. |
-| Store screenshots | `tools/store-shots/` | Takes the captioned screenshots for Google Play in every language. |
+| Store screenshots and ad video | `tools/store-shots/` | Takes the captioned screenshots for Google Play in every language and makes the ad video. |
 
 The game's files live in `docs/play/` and nowhere else. The Android build takes its assets from that
 folder (`sourceSets` in `app/build.gradle.kts`), and GitHub Pages serves the same folder as the web
@@ -47,7 +53,7 @@ GitHub Pages serves the `docs/` folder at https://filipfogel.github.io/twinkle-t
 - `/play/` is the game. `/play/?daily` goes straight to today's daily string.
 
 On the web the game has no ads. When a player runs out of hints, the dialog points to the daily
-string, which gives one hint a day, and to the app. The menu has a link to the app on Google Play,
+string, which gives hints (see "The daily string" below), and to the app. The menu has a link to the app on Google Play,
 except on an iPhone or iPad.
 
 To try the web version on your own computer, serve the folder over http and open
@@ -78,6 +84,21 @@ so a language with other letters also needs another font file.
 Add `?lang=sv` to the address to see a language regardless of the settings.
 
 None of the translations has been checked by a native speaker yet.
+
+## The daily string
+
+Every day there is one new puzzle, the same for every player. The first time a player finishes it
+that day, they earn a hint. Finishing it on the day after as well builds a streak.
+
+Every third day in a row (day 3, 6, 9 and so on) the string gives 10 hints instead of 1. The win
+dialog counts down to that day, and on the day itself the menu says what the string is worth.
+
+In the app, the string that gives the 10 hints opens with an interstitial, no matter which level
+the player has reached. If no ad was loaded at that moment, it is shown when the string is done
+instead. If there is still no ad, for example without a network, the player gets the hints anyway.
+The web version gives the same hints without an ad.
+
+`STREAK_DAYS` and `STREAK_HINTS` at the top of `game.js` hold the two numbers.
 
 ## Sharing and rating
 
@@ -139,11 +160,16 @@ them you have to ask Google Play support to reset the upload key.
    The debug build keeps showing test ads, the release build shows real ones.
 3. Create a GDPR message in AdMob under Privacy & messaging. The app shows it automatically.
 4. Add your phone as a test device in AdMob. Never click your own real ads.
-5. Publish an `app-ads.txt` on the website you list in Google Play.
+5. In Play Console, under Store settings, set the website to
+   `https://filipfogel.github.io/twinkle-twist/`. AdMob then reads `app-ads.txt` from the root of
+   that domain, `https://filipfogel.github.io/app-ads.txt`. The file is in the separate repo
+   `FilipFogel/filipfogel.github.io`, because this repo is served under `/twinkle-twist/`.
 
 Ads are shown like this, and can be changed at the top of `game.js`:
 
-- An interstitial every third completed level, starting at level 6 at the earliest and at most one per minute.
+- No ads during the first ten levels. The first interstitial comes after level 10, and then after
+  every fifth completed level. There is at most one per minute.
+- An interstitial when the player opens the daily string that gives 10 hints, see "The daily string".
 - A rewarded ad gives 2 hints when the player has run out.
 - The web version shows no ads.
 
@@ -158,6 +184,24 @@ Ads are shown like this, and can be changed at the top of `game.js`:
   `store-assets/shots/`, which is not in git.
 - `store-assets/links.md` has one link to the app's page per place where the game is shared, so
   that Play Console can show where the installs come from.
+
+## The ad video
+
+`tools/store-shots/video.js` makes a video of just under 20 seconds for ads and for sharing: the
+real game is played inside a phone, with captions and an end card. The top of that file says how
+to run it. Each video comes in three shapes (portrait, landscape and square), in one set for the
+whole year and one for Christmas, and in the languages you ask for. The videos land in
+`store-assets/video/`, which is not in git.
+
+- The files are WebM with sound, and YouTube takes them as they are. The Christmas set has the
+  game's music. The year-round set only has the game's own sounds.
+- The captions are the same as on the screenshots (`CAPTIONS` in `shots.js`). The levels that are
+  played, the pace and the loudness are set at the top of `video.js`.
+- The video shows the game as it is in `docs/play/` right now. Make it again after a change to
+  the game's look.
+
+To show the app in ads inside other apps, upload the videos to YouTube and add them to an App
+campaign in Google Ads. Google Ads then shows them in other apps, on YouTube and on Google Play.
 
 ## Before publishing
 

@@ -1,0 +1,276 @@
+<!doctype html>
+<!-- The stage for the ad video: a caption next to a phone that runs the real game, then an end card.
+     video.js opens this page with ?format=portrait|landscape|square&theme=plain|xmas, loads the game
+     into the phone and moves everything forward one video frame at a time. Nothing here moves on
+     its own: time only passes when video.js calls stage.step(). -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ad video</title>
+<style>
+  @font-face {
+    font-family: "Bricolage Grotesque";
+    src: url("../../docs/play/bricolage.woff2") format("woff2");
+    font-weight: 200 800;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; overflow: hidden; }
+  body {
+    font-family: "Bricolage Grotesque", sans-serif; color: #fff;
+    background: linear-gradient(180deg, #7B5CFA 0%, #5637DB 100%); --deep: #4B2DC9;
+  }
+  body.xmas { background: linear-gradient(180deg, #D0384A 0%, #9F1D32 100%); --deep: #A01E33; }
+  .lights { position: absolute; left: 0; top: 0; overflow: visible; }
+  /* a few still snowflakes in the background of the Christmas set */
+  .flake { position: absolute; width: var(--s); height: var(--s); opacity: var(--o); display: none; }
+  body.xmas .flake { display: block; }
+
+  /* ---------- Caption and name ---------- */
+  .copy { position: absolute; transition: opacity .25s; }
+  .cap {
+    position: absolute; inset: 0; margin: 0; display: grid; align-items: center;
+    font-weight: 800; line-height: 1.06; letter-spacing: -0.02em; text-wrap: balance;
+    opacity: 0; transform: translateY(16px); /* a new caption waits here, just below its place */
+  }
+  .cap span { display: block; }
+  .cap.on { opacity: 1; transform: none; transition: opacity .28s ease-out, transform .36s cubic-bezier(.2, 1.2, .4, 1); }
+  .cap.off { opacity: 0; transform: translateY(-14px); transition: opacity .2s ease-in, transform .2s ease-in; }
+  .brand {
+    position: absolute; display: flex; align-items: center; gap: 10px;
+    font-weight: 700; font-size: 21px; letter-spacing: -0.01em; transition: opacity .25s;
+  }
+  .brand img { width: 34px; height: 34px; border-radius: 9px; box-shadow: 0 4px 10px -4px rgba(20, 10, 60, .6); }
+
+  /* ---------- Phone ---------- */
+  .phone {
+    position: absolute; left: 0; top: 0; width: 380px; height: 734px; padding: 10px;
+    border-radius: 42px; background: #1F2547; box-shadow: 0 24px 50px -18px rgba(20, 10, 60, .65);
+    transform-origin: 0 0; transform: translate(var(--px), var(--py)) scale(var(--ps));
+    transition: transform .45s cubic-bezier(.5, 0, .9, .5), opacity .32s ease-in;
+  }
+  .screen { position: relative; width: 360px; height: 714px; border-radius: 32px; overflow: hidden; background: #E6EFFF; }
+  /* two games side by side: the second one slides in when the video moves on to the big board */
+  .screen iframe { position: absolute; left: 0; top: 0; width: 360px; height: 714px; border: 0; transition: transform .45s cubic-bezier(.4, 0, .2, 1); }
+  #gB { transform: translateX(100%); }
+  body.scene-b #gA { transform: translateX(-100%); }
+  body.scene-b #gB { transform: none; }
+
+  /* ---------- The three shapes. The page is 540 × 960, 960 × 540 or 540 × 540; the video is twice that. ---------- */
+  body.portrait .copy { left: 28px; right: 28px; top: 58px; height: 126px; }
+  body.portrait .cap { justify-items: center; text-align: center; }
+  body.portrait .phone { --px: 89.5px; --py: 190px; --ps: .95; }
+  body.portrait .brand { left: 0; right: 0; bottom: 21px; justify-content: center; }
+
+  body.landscape .copy { left: 66px; width: 480px; top: 92px; height: 330px; }
+  body.landscape .phone { --px: 612px; --py: 17px; --ps: .69; }
+  body.landscape .brand { left: 66px; bottom: 44px; }
+
+  body.square .copy { left: 24px; width: 222px; top: 92px; height: 330px; }
+  body.square .phone { --px: 262px; --py: 17px; --ps: .69; }
+  body.square .brand { left: 24px; bottom: 28px; font-size: 18px; gap: 8px; }
+  body.square .brand img { width: 30px; height: 30px; border-radius: 8px; }
+
+  /* ---------- End card ---------- */
+  .end {
+    position: absolute; inset: 0; padding: 0 32px; visibility: hidden;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+  }
+  .end > * { opacity: 0; }
+  .end-icon { width: 132px; height: 132px; border-radius: 30px; box-shadow: 0 18px 36px -14px rgba(20, 10, 60, .7); }
+  .end-name { margin-top: 22px; font-size: 60px; font-weight: 800; line-height: 1; letter-spacing: -0.035em; }
+  .end-tag { margin: 12px 0 0; max-width: 15em; font-size: 21px; line-height: 1.3; text-wrap: balance; color: rgba(255, 255, 255, .92); }
+  .end-cta {
+    margin-top: 30px; padding: 15px 28px; border-radius: 18px; background: #fff; color: var(--deep);
+    font-weight: 700; font-size: 22px; box-shadow: 0 12px 26px -12px rgba(20, 10, 60, .75);
+  }
+  body.square .end-icon { width: 108px; height: 108px; border-radius: 25px; }
+  body.square .end-name { font-size: 52px; margin-top: 18px; }
+  body.square .end-cta { margin-top: 24px; }
+
+  body.scene-end .phone { opacity: 0; transform: translate(var(--px), calc(var(--py) + 70px)) scale(calc(var(--ps) * .94)); }
+  body.scene-end .copy, body.scene-end .brand { opacity: 0; }
+  body.scene-end .end { visibility: visible; }
+  body.scene-end .end > * { animation: rise .5s cubic-bezier(.2, 1.1, .4, 1) both; animation-delay: calc(var(--k) * 110ms + 300ms); }
+  body.scene-end .end-icon { animation-name: pop; }
+  body.scene-end .end-cta { animation: rise .5s cubic-bezier(.2, 1.1, .4, 1) calc(var(--k) * 110ms + 300ms) both, pulse 1.5s ease-in-out 1.5s infinite; }
+  @keyframes rise { from { opacity: 0; transform: translateY(26px); } to { opacity: 1; transform: none; } }
+  @keyframes pop { from { opacity: 0; transform: scale(.5); } to { opacity: 1; transform: none; } }
+  @keyframes pulse { 50% { transform: scale(1.05); } }
+</style>
+</head>
+<body>
+<svg class="lights" id="lights" aria-hidden="true"></svg>
+<div class="copy"><h1 class="cap"></h1><h1 class="cap"></h1></div>
+<div class="brand"><img src="../../store-assets/icon-512.png" alt=""><span>Twinkle Twist</span></div>
+<div class="phone"><div class="screen"><iframe id="gA" title="The first game"></iframe><iframe id="gB" title="The second game"></iframe></div></div>
+<div class="end">
+  <img class="end-icon" style="--k:0" src="../../store-assets/icon-512.png" alt="">
+  <div class="end-name" style="--k:1">Twinkle Twist</div>
+  <p class="end-tag" style="--k:2"></p>
+  <div class="end-cta" style="--k:3.4"></div>
+</div>
+<script>
+  (function () {
+    var q = new URLSearchParams(location.search);
+    var format = { landscape: 1, square: 1 }[q.get('format')] ? q.get('format') : 'portrait';
+    var W = format === 'landscape' ? 960 : 540, H = format === 'portrait' ? 960 : 540;
+    document.body.className = format + (q.get('theme') === 'xmas' ? ' xmas' : '');
+
+    // ---------- Background: a string of lights along the top, and snowflakes at Christmas ----------
+    (function () {
+      var colors = ['#FF5D5D', '#FFB81F', '#22C58B', '#3B9BFF', '#FFE45C', '#FF8FC7'];
+      var arcs = Math.max(2, Math.round(W / 270)), span = (W + 20) / arcs, d = 'M-10 6', lamps = '', defs = '', k = 0;
+      colors.forEach(function (c, i) {
+        defs += '<radialGradient id="a' + i + '"><stop offset="0" stop-color="' + c + '" stop-opacity=".75"/><stop offset="1" stop-color="' + c + '" stop-opacity="0"/></radialGradient>';
+      });
+      for (var a = 0; a < arcs; a++) {
+        // one arc of the cable: from (x0, y0) down to the sag at (cx, 76) and up to (x1, y1)
+        var x0 = -10 + a * span, x1 = x0 + span, cx = (x0 + x1) / 2, y0 = a ? 14 : 6, y1 = a < arcs - 1 ? 14 : 6;
+        d += 'Q' + cx.toFixed(1) + ' 76 ' + x1.toFixed(1) + ' ' + y1;
+        (a % 2 ? [0.25, 0.54, 0.83] : [0.17, 0.46, 0.75]).forEach(function (t) {
+          var x = (1 - t) * (1 - t) * x0 + 2 * (1 - t) * t * cx + t * t * x1;
+          var y = (1 - t) * (1 - t) * y0 + 2 * (1 - t) * t * 76 + t * t * y1, c = k++ % colors.length;
+          lamps += '<circle cx="' + x.toFixed(1) + '" cy="' + (y + 15).toFixed(1) + '" r="26" fill="url(#a' + c + ')"/>' +
+            '<rect x="' + (x - 3.5).toFixed(1) + '" y="' + (y - 1).toFixed(1) + '" width="7" height="9" rx="1.5" fill="rgba(255,255,255,.7)"/>' +
+            '<circle cx="' + x.toFixed(1) + '" cy="' + (y + 15).toFixed(1) + '" r="9" fill="' + colors[c] + '"/>';
+        });
+      }
+      var svg = document.getElementById('lights');
+      svg.setAttribute('width', W); svg.setAttribute('height', 78); svg.setAttribute('viewBox', '0 0 ' + W + ' 78');
+      svg.innerHTML = '<defs>' + defs + '</defs><path d="' + d + '" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="2.5"/>' + lamps;
+
+      var flake = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='M16 16L16 3M12.3 4.7L16 7L19.7 4.7M13.4 9.4L16 11L18.6 9.4M16 16L27.3 9.5M23.9 7.1L23.8 11.5L27.6 13.6M20.4 10.4L20.3 13.5L23 15M16 16L27.3 22.5M27.6 18.4L23.8 20.5L23.9 24.9M23 17L20.3 18.5L20.4 21.6M16 16L16 29M19.7 27.3L16 25L12.3 27.3M18.6 22.6L16 21L13.4 22.6M16 16L4.7 22.5M8.1 24.9L8.2 20.5L4.4 18.4M11.6 21.6L11.7 18.5L9 17M16 16L4.7 9.5M4.4 13.6L8.2 11.5L8.1 7.1M9 15L11.7 13.5L11.6 10.4'/></svg>";
+      // x, y, size and opacity, placed by hand for each shape so that no flake touches the lamps, the text or the edge of the phone
+      ({
+        portrait: [[14, 96, 26, .5], [498, 84, 22, .45], [30, 300, 30, .35], [486, 420, 34, .4], [18, 610, 24, .4], [500, 720, 28, .35], [40, 880, 22, .4], [476, 900, 20, .45]],
+        landscape: [[30, 94, 26, .5], [552, 104, 22, .45], [64, 172, 28, .35], [36, 350, 22, .4], [548, 316, 30, .35], [412, 478, 24, .4], [902, 240, 32, .4], [896, 404, 26, .35]],
+        square: [[20, 96, 24, .5], [206, 110, 20, .4], [34, 170, 28, .35], [18, 346, 22, .4], [200, 372, 26, .35], [214, 472, 20, .4]]
+      })[format].forEach(function (f) {
+        var el = document.createElement('div');
+        el.className = 'flake';
+        el.style.cssText = 'left:' + f[0] + 'px;top:' + f[1] + 'px;--s:' + f[2] + 'px;--o:' + f[3];
+        el.innerHTML = flake;
+        document.body.insertBefore(el, document.querySelector('.copy'));
+      });
+    })();
+
+    // ---------- Captions ----------
+    var caps = document.querySelectorAll('.cap'), shown = 0, texts = [];
+    var BIGGEST = { portrait: 42, landscape: 60, square: 35 }[format];
+
+    /** Puts a text in a caption layer, in the largest size at which it fits. */
+    function put(el, text) {
+      el.innerHTML = '<span></span>';
+      var span = el.firstChild, size = BIGGEST;
+      span.textContent = text;
+      for (;;) {
+        el.style.fontSize = size + 'px';
+        if (size <= 18 || (span.offsetHeight <= el.clientHeight && el.scrollWidth <= el.clientWidth)) break;
+        size--;
+      }
+    }
+    function showCaption(n) {
+      var from = caps[shown], to = caps[1 - shown];
+      put(to, texts[n]);
+      to.className = 'cap';
+      void to.offsetWidth; // the new caption takes its starting place before it moves in
+      from.className = 'cap off';
+      to.className = 'cap on';
+      shown = 1 - shown;
+    }
+
+    // ---------- The games in the phone ----------
+    function game(g) { return document.getElementById('g' + g).contentWindow; }
+    // what is added to the game for the video: a mark where the finger taps. The outline that
+    // shows where the keyboard is goes away, since the video is played by touch.
+    var TAP_CSS = 'button:focus-visible{outline:none!important}.vtap{position:fixed;z-index:18;border-radius:50%;pointer-events:none;opacity:0;' +
+      'background:rgba(255,255,255,.6);box-shadow:0 0 0 2.5px rgba(31,37,71,.5),0 4px 12px rgba(31,37,71,.35);animation:vtap .44s ease-out}' +
+      '@keyframes vtap{0%{opacity:0;transform:scale(.5)}16%{opacity:1;transform:scale(1)}50%{opacity:1;transform:scale(.9)}100%{opacity:0;transform:scale(1.45)}}';
+    // the big board stays in view after it is done: the win dialog is left out, the snow keeps falling
+    var NO_DIALOG_CSS = '.backdrop{background:none!important;animation:none!important}.modal{display:none!important}';
+
+    function tap(g, i, mark) {
+      var w = game(g), d = w.document, el = d.querySelector('button.cell[data-i="' + i + '"]');
+      if (mark) {
+        var r = el.getBoundingClientRect(), size = Math.max(26, Math.min(46, r.width * 0.58)), dot = d.createElement('i');
+        dot.className = 'vtap';
+        dot.style.cssText = 'left:' + (r.left + r.width / 2 - size / 2) + 'px;top:' + (r.top + r.height / 2 - size / 2) + 'px;width:' + size + 'px;height:' + size + 'px';
+        d.body.appendChild(dot);
+        w.setTimeout(function () { dot.remove(); }, 700);
+      }
+      el.click();
+    }
+
+    // ---------- Time ----------
+    // video.js gives every page a clock that stands still (see fakeWorld in video.js). Here the clocks
+    // are moved forward together, and every CSS animation and transition is set to where it should be.
+    function pages() { return [window, game('A'), game('B')].filter(function (w) { return w && w.__clock; }); }
+    function place(w) {
+      var now = w.__clock.now, before = w.__placedAt == null ? now : w.__placedAt;
+      w.document.getAnimations().forEach(function (a) {
+        if (a.__from == null) { a.__from = before; a.pause(); } // new since the last frame: it started back then
+        var at = now - a.__from, end = a.effect ? a.effect.getComputedTiming().endTime : 0;
+        if (at >= end) a.finish(); else a.currentTime = at;
+      });
+      w.__placedAt = now;
+    }
+    function forward(ms) {
+      pages().forEach(function (w) { w.__clock.tick(ms); });
+      pages().forEach(place);
+    }
+
+    var DO = {
+      caption: function (a) { showCaption(a.n); },
+      scene: function (a) { document.body.classList.add('scene-' + a.name); },
+      tap: function (a) { tap(a.g, a.i, true); }
+    };
+    var last = 0;
+
+    window.__rec = false;  // while true, the game's sounds are written down in __tones
+    window.__tones = [];
+    window.__vt = 0;       // the time in the video, in milliseconds, of what happens right now
+
+    window.stage = {
+      /** The texts: { captions: [...], tagline, cta }. */
+      setup: function (o) {
+        texts = o.captions;
+        document.querySelector('.end-tag').textContent = o.tagline;
+        document.querySelector('.end-cta').textContent = o.cta;
+        return document.fonts.load('800 40px "Bricolage Grotesque"').then(function () {
+          put(caps[0], texts[0]);
+          caps[0].className = 'cap on';
+        });
+      },
+      /** Loads the game into phone screen 'A' or 'B', starting from the given save file. */
+      load: function (g, url, save, noDialog) {
+        var frame = document.getElementById('g' + g);
+        return new Promise(function (resolve) {
+          frame.onload = function () {
+            var d = frame.contentDocument, style = d.createElement('style');
+            style.textContent = TAP_CSS + (noDialog ? NO_DIALOG_CSS : '');
+            d.head.appendChild(style);
+            resolve();
+          };
+          localStorage.setItem('twinkletwist.v1', save);
+          frame.src = url;
+        });
+      },
+      click: function (g, selector) { game(g).document.querySelector(selector).click(); },
+      /** Taps that are made before the video starts, so that a board is partly solved already. */
+      pretap: function (g, cells) { cells.forEach(function (i) { tap(g, i, false); }); },
+      /** Lets the time pass until everything has come to rest. */
+      settle: function (ms) { for (var k = 0; k < ms; k += 50) forward(50); },
+      fonts: function () { return Promise.all(pages().map(function (w) { return w.document.fonts.ready; })); },
+      start: function () { last = 0; window.__tones = []; window.__rec = true; },
+      /** One video frame: does what is due, moves the time to t and waits until it is drawn. */
+      step: function (t, actions) {
+        actions.forEach(function (a) { window.__vt = a.t; DO[a.do](a); });
+        forward(t - last);
+        last = t;
+        return new Promise(function (drawn) { window.__realRAF(function () { window.__realRAF(drawn); }); });
+      }
+    };
+  })();
+</script>
+</body>
+</html>

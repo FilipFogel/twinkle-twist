@@ -132,17 +132,21 @@ const SCENES = [
   } }
 ];
 
-(async () => {
+/** Starts Google Chrome, or Microsoft Edge if Chrome is missing, without a window. */
+async function launch(moreArgs) {
+  const quiet = { args: ['--mute-audio'].concat(moreArgs || []) }; // the Christmas music would otherwise play while the pictures are taken
+  try { return await chromium.launch(Object.assign({ channel: 'chrome' }, quiet)); }
+  catch (e) { return await chromium.launch(Object.assign({ channel: 'msedge' }, quiet)); }
+}
+
+async function main() {
   const wanted = process.argv.slice(2);
   const langs = wanted.length ? wanted : LANG.order;
   for (const lang of langs) if (!CAPTIONS[lang]) throw new Error('No captions for "' + lang + '". Add them at the top of shots.js.');
 
   const server = await serve();
   const base = 'http://127.0.0.1:' + server.address().port;
-  let browser;
-  const quiet = { args: ['--mute-audio'] }; // the Christmas music would otherwise play while the pictures are taken
-  try { browser = await chromium.launch(Object.assign({ channel: 'chrome' }, quiet)); }
-  catch (e) { browser = await chromium.launch(Object.assign({ channel: 'msedge' }, quiet)); }
+  const browser = await launch();
 
   for (const set of [{ dir: 'year-round', theme: 'plain', xmas: 0 }, { dir: 'christmas', theme: 'xmas', xmas: 1 }]) {
     for (const lang of langs) {
@@ -180,4 +184,9 @@ const SCENES = [
   }
   await browser.close();
   server.close();
-})().catch(e => { console.error(e); process.exit(1); });
+}
+
+// video.js makes the ad video with the same captions, save files and solving order
+module.exports = { ROOT, LANG, CAPTIONS, serve, launch, saveAt, solvingTaps };
+
+if (require.main === module) main().catch(e => { console.error(e); process.exit(1); });
