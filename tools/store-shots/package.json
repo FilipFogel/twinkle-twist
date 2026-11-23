@@ -1,9 +1,10 @@
 {
   "name": "twinkle-twist-store-shots",
   "private": true,
-  "description": "Takes the captioned screenshots for the Google Play page. See shots.js.",
+  "description": "Takes the captioned screenshots for the Google Play page (shots.js) and makes the ad video (video.js).",
   "scripts": {
-    "shots": "node shots.js"
+    "shots": "node shots.js",
+    "video": "node video.js"
   },
   "dependencies": {
     "playwright-core": "^1.65.1"

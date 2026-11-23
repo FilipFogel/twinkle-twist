@@ -34,7 +34,7 @@ are listed one row per level in `FIRST_LEVELS`, just above it.
 | Ads | `AdsManager.kt` | All AdMob code: consent, interstitial, rewarded ad. |
 | Ad unit ids | `app/src/main/res/values/ads.xml` | Google's test ids. Real ids go in the release build, see below. |
 | Store page | `store-assets/` | Icon, feature graphic, the texts for Google Play in every language and links that show where installs come from. |
-| Store screenshots | `tools/store-shots/` | Takes the captioned screenshots for Google Play in every language. |
+| Store screenshots and ad video | `tools/store-shots/` | Takes the captioned screenshots for Google Play in every language and makes the ad video. |
 
 The game's files live in `docs/play/` and nowhere else. The Android build takes its assets from that
 folder (`sourceSets` in `app/build.gradle.kts`), and GitHub Pages serves the same folder as the web
@@ -160,7 +160,10 @@ them you have to ask Google Play support to reset the upload key.
    The debug build keeps showing test ads, the release build shows real ones.
 3. Create a GDPR message in AdMob under Privacy & messaging. The app shows it automatically.
 4. Add your phone as a test device in AdMob. Never click your own real ads.
-5. Publish an `app-ads.txt` on the website you list in Google Play.
+5. In Play Console, under Store settings, set the website to
+   `https://filipfogel.github.io/twinkle-twist/`. AdMob then reads `app-ads.txt` from the root of
+   that domain, `https://filipfogel.github.io/app-ads.txt`. The file is in the separate repo
+   `FilipFogel/filipfogel.github.io`, because this repo is served under `/twinkle-twist/`.
 
 Ads are shown like this, and can be changed at the top of `game.js`:
 
@@ -181,6 +184,24 @@ Ads are shown like this, and can be changed at the top of `game.js`:
   `store-assets/shots/`, which is not in git.
 - `store-assets/links.md` has one link to the app's page per place where the game is shared, so
   that Play Console can show where the installs come from.
+
+## The ad video
+
+`tools/store-shots/video.js` makes a video of just under 20 seconds for ads and for sharing: the
+real game is played inside a phone, with captions and an end card. The top of that file says how
+to run it. Each video comes in three shapes (portrait, landscape and square), in one set for the
+whole year and one for Christmas, and in the languages you ask for. The videos land in
+`store-assets/video/`, which is not in git.
+
+- The files are WebM with sound, and YouTube takes them as they are. The Christmas set has the
+  game's music. The year-round set only has the game's own sounds.
+- The captions are the same as on the screenshots (`CAPTIONS` in `shots.js`). The levels that are
+  played, the pace and the loudness are set at the top of `video.js`.
+- The video shows the game as it is in `docs/play/` right now. Make it again after a change to
+  the game's look.
+
+To show the app in ads inside other apps, upload the videos to YouTube and add them to an App
+campaign in Google Ads. Google Ads then shows them in other apps, on YouTube and on Google Play.
 
 ## Before publishing
 
