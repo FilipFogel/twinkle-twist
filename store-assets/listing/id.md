@@ -59,9 +59,8 @@ Twinkle Twist didanai oleh iklan: iklan singkat sesekali di antara level, dan ik
 
 Kamu juga bisa bermain di browser: https://filipfogel.github.io/twinkle-twist/
 
-## Release notes for 1.1.0 (max 500)
+## Release notes for 1.1.0, version code 5 (max 500)
 
-• Bagikan hasil untaian harianmu dan tantang teman
-• Kini juga tersedia dalam bahasa Indonesia, Swedia, Jerman, Prancis, Spanyol, dan Portugis
-• Pilih bahasamu di Pengaturan
-• Tombol musik di layar permainan selama tema Natal aktif
+• Awal yang lebih ringan: 15 level pertama kini lebih mudah
+• Iklan lebih sedikit: tanpa iklan di sepuluh level pertama, dan lebih jarang setelahnya
+• Selesaikan untaian harian tiga hari berturut-turut dan dapatkan 10 petunjuk

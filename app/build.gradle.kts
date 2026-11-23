@@ -23,7 +23,7 @@ android {
         minSdk = 26
         targetSdk = 36
         // Raise versionCode by 1 for every upload to Play Console.
-        versionCode = 4
+        versionCode = 5
         versionName = "1.1.0"
     }
 

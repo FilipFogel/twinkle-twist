@@ -59,9 +59,8 @@ Twinkle Twist se financia con anuncios: uno corto de vez en cuando entre niveles
 
 También puedes jugar en el navegador: https://filipfogel.github.io/twinkle-twist/
 
-## Release notes for 1.1.0 (max 500)
+## Release notes for 1.1.0, version code 5 (max 500)
 
-• Comparte tu resultado de la guirnalda del día y reta a tus amigos
-• Ahora también en español, sueco, alemán, francés, portugués e indonesio
-• Elige tu idioma en Ajustes
-• Un botón de música en la pantalla de juego mientras dura el tema navideño
+• Un comienzo más suave: los 15 primeros niveles son más fáciles
+• Menos anuncios: ninguno en los diez primeros niveles, y después con menos frecuencia
+• Completa la guirnalda del día tres días seguidos y gana 10 pistas

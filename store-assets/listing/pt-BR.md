@@ -59,9 +59,8 @@ Twinkle Twist é mantido por anúncios: um curto de vez em quando entre os níve
 
 Você também pode jogar no navegador: https://filipfogel.github.io/twinkle-twist/
 
-## Release notes for 1.1.0 (max 500)
+## Release notes for 1.1.0, version code 5 (max 500)
 
-• Compartilhe seu resultado do cordão do dia e desafie os amigos
-• Agora também em português, sueco, alemão, francês, espanhol e indonésio
-• Escolha seu idioma em Configurações
-• Um botão de música na tela do jogo enquanto o tema de Natal estiver ativo
+• Um começo mais suave: os 15 primeiros níveis ficaram mais fáceis
+• Menos anúncios: nenhum nos dez primeiros níveis, e com menos frequência depois
+• Conclua o cordão do dia três dias seguidos e ganhe 10 dicas

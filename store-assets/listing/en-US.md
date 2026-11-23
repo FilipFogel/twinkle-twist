@@ -59,9 +59,8 @@ Twinkle Twist is funded by ads: a short one now and then between levels, and an 
 
 You can also play in your browser: https://filipfogel.github.io/twinkle-twist/
 
-## Release notes for 1.1.0 (max 500)
+## Release notes for 1.1.0, version code 5 (max 500)
 
-• Share your daily string result and challenge a friend
-• Now also in Swedish, German, French, Spanish, Portuguese and Indonesian
-• Choose your language under Settings
-• A music button on the game screen while the Christmas theme is on
+• A gentler start: the first 15 levels are easier
+• Fewer ads: none during the first ten levels, and less often after that
+• Finish the daily string three days in a row and earn 10 hints

@@ -59,9 +59,8 @@ Twinkle Twist finansieras med annonser: en kort annons då och då mellan nivåe
 
 Du kan också spela i webbläsaren: https://filipfogel.github.io/twinkle-twist/
 
-## Release notes for 1.1.0 (max 500)
+## Release notes for 1.1.0, version code 5 (max 500)
 
-• Dela resultatet från dagens slinga och utmana en vän
-• Nu även på svenska, tyska, franska, spanska, portugisiska och indonesiska
-• Välj språk under Inställningar
-• En musikknapp på spelskärmen när jultemat är på
+• En mjukare start: de 15 första nivåerna är lättare
+• Färre annonser: inga under de tio första nivåerna, och mer sällan efter det
+• Klara dagens slinga tre dagar i rad och få 10 ledtrådar

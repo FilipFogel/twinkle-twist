@@ -59,9 +59,8 @@ Twinkle Twist finanziert sich durch Werbung: ab und zu eine kurze Anzeige zwisch
 
 Du kannst auch im Browser spielen: https://filipfogel.github.io/twinkle-twist/
 
-## Release notes for 1.1.0 (max 500)
+## Release notes for 1.1.0, version code 5 (max 500)
 
-• Teile dein Ergebnis der Tageskette und fordere Freunde heraus
-• Jetzt auch auf Deutsch, Schwedisch, Französisch, Spanisch, Portugiesisch und Indonesisch
-• Wähle deine Sprache unter Einstellungen
-• Ein Musikknopf im Spiel, solange das Weihnachtsthema aktiv ist
+• Ein sanfterer Einstieg: Die ersten 15 Level sind leichter
+• Weniger Werbung: bis Level 10 gar keine, danach seltener
+• Schaffe die Tageskette drei Tage in Folge und bekomme 10 Tipps
